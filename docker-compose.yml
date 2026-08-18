@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: controle_app
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "9000:9000"
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=controle_total
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - postgres
+    networks:
+      - controle
+
+  nginx:
+    image: nginx:alpine
+    container_name: controle_nginx
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    volumes:
+      - .:/app
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - controle
+
+  postgres:
+    image: postgres:17
+    container_name: controle_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: controle_total
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5487:5432"
+    networks:
+      - controle
+
+volumes:
+  postgres_data:
+
+networks:
+  controle:
+    driver: bridge
