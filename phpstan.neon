@@ -1,0 +1,16 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - app
+        - database
+        - routes
+        - tests
+
+    ignoreErrors:
+        # Pest liga $this ao TestCase em runtime; o PHPStan enxerga apenas TestCall.
+        - identifier: method.notFound
+          message: '#Call to an undefined method Pest\\PendingCalls\\TestCall::#'

@@ -1,41 +1,82 @@
 <?php
 
-use App\Models\User;
+use App\Models\Usuario;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Auth\SessionGuard;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 
-test('login screen can be rendered', function () {
-    $response = $this->get('/login');
-
-    $response->assertStatus(200);
+test('a tela de login é exibida', function () {
+    $this->get('/login')->assertOk();
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
-
-    $response = $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
-
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
-});
-
-test('users can not authenticate with invalid password', function () {
-    $user = User::factory()->create();
+test('usuário autentica com credenciais válidas', function () {
+    $usuario = Usuario::factory()->create();
 
     $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'wrong-password',
-    ]);
+        'email' => $usuario->email,
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($usuario);
+});
+
+test('usuário não autentica com senha inválida', function () {
+    $usuario = Usuario::factory()->create();
+
+    $this->post('/login', [
+        'email' => $usuario->email,
+        'password' => 'senha-errada',
+    ])->assertInvalid(['email']);
 
     $this->assertGuest();
 });
 
-test('users can logout', function () {
-    $user = User::factory()->create();
+test('login é bloqueado após cinco tentativas falhas', function () {
+    Event::fake([Lockout::class]);
 
-    $response = $this->actingAs($user)->post('/logout');
+    $usuario = Usuario::factory()->create();
+
+    foreach (range(1, 5) as $tentativa) {
+        $this->post('/login', [
+            'email' => $usuario->email,
+            'password' => 'senha-errada',
+        ]);
+    }
+
+    $this->post('/login', [
+        'email' => $usuario->email,
+        'password' => 'password',
+    ])->assertInvalid(['email']);
 
     $this->assertGuest();
-    $response->assertRedirect('/');
+
+    Event::assertDispatched(Lockout::class);
+});
+
+test('lembrar-me grava o cookie de sessão persistente', function () {
+    $usuario = Usuario::factory()->create();
+
+    $resposta = $this->post('/login', [
+        'email' => $usuario->email,
+        'password' => 'password',
+        'remember' => 'on',
+    ]);
+
+    /** @var SessionGuard $guard */
+    $guard = Auth::guard('web');
+
+    $resposta->assertCookie($guard->getRecallerName());
+
+    $this->assertAuthenticatedAs($usuario);
+});
+
+test('usuário sai e volta para o login', function () {
+    $usuario = Usuario::factory()->create();
+
+    $this->actingAs($usuario)
+        ->post('/logout')
+        ->assertRedirect(route('login'));
+
+    $this->assertGuest();
 });
