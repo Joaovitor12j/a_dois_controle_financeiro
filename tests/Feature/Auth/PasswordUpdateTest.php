@@ -1,40 +1,36 @@
 <?php
 
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Support\Facades\Hash;
 
-test('password can be updated', function () {
-    $user = User::factory()->create();
+test('senha é trocada com a senha atual correta', function () {
+    $usuario = Usuario::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $this->actingAs($usuario)
         ->from('/profile')
         ->put('/password', [
             'current_password' => 'password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
-        ]);
-
-    $response
+            'password' => 'senha-nova-forte',
+            'password_confirmation' => 'senha-nova-forte',
+        ])
         ->assertSessionHasNoErrors()
         ->assertRedirect('/profile');
 
-    $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+    expect(Hash::check('senha-nova-forte', $usuario->refresh()->password))->toBeTrue();
 });
 
-test('correct password must be provided to update password', function () {
-    $user = User::factory()->create();
+test('senha não é trocada com a senha atual incorreta', function () {
+    $usuario = Usuario::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $this->actingAs($usuario)
         ->from('/profile')
         ->put('/password', [
-            'current_password' => 'wrong-password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrors('current_password')
+            'current_password' => 'senha-errada',
+            'password' => 'senha-nova-forte',
+            'password_confirmation' => 'senha-nova-forte',
+        ])
+        ->assertInvalid(['current_password'])
         ->assertRedirect('/profile');
+
+    expect(Hash::check('password', $usuario->refresh()->password))->toBeTrue();
 });
