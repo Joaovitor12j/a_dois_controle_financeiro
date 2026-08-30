@@ -5,6 +5,7 @@ namespace App\Services\Financeiro;
 use App\Models\Conta;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 final class ContaService
 {
@@ -33,6 +34,6 @@ final class ContaService
 
     public function excluir(Conta $conta): void
     {
-        $conta->delete();
+        DB::transaction(fn () => $conta->delete());
     }
 }

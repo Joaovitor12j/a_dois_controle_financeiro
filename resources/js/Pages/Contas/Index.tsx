@@ -1,99 +1,123 @@
-import DangerButton from '@/Components/DangerButton';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import type { Conta } from '@/types';
+import { Head, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import CartaoConta from './Partials/CartaoConta';
+import ConfirmarExclusaoConta from './Partials/ConfirmarExclusaoConta';
+import FormularioConta from './Partials/FormularioConta';
 
-interface Conta {
-    id: string;
-    nome: string;
+interface AlvoDeModal {
+    aberto: boolean;
+    conta: Conta | null;
 }
 
+const modalFechado: AlvoDeModal = { aberto: false, conta: null };
+
 export default function Index({ contas }: { contas: Conta[] }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        nome: '',
-    });
+    const usuario = usePage().props.auth.usuario!;
 
-    const { delete: destroy } = useForm();
+    const [formulario, setFormulario] = useState<AlvoDeModal>(modalFechado);
+    const [exclusao, setExclusao] = useState<AlvoDeModal>(modalFechado);
+    const [aberturas, setAberturas] = useState(0);
 
-    function criar(evento: FormEvent) {
-        evento.preventDefault();
-        post(route('contas.store'), { onSuccess: () => reset('nome') });
-    }
+    const abrirFormulario = (conta: Conta | null) => {
+        setAberturas((quantas) => quantas + 1);
+        setFormulario({ aberto: true, conta });
+    };
+
+    const fecharFormulario = () =>
+        setFormulario((atual) => ({ ...atual, aberto: false }));
+
+    const fecharExclusao = () =>
+        setExclusao((atual) => ({ ...atual, aberto: false }));
 
     return (
         <AuthenticatedLayout
             header={
-                <h1 className="font-display text-2xl font-bold leading-tight text-tinta">
-                    Contas
-                </h1>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h1 className="font-display text-2xl font-bold leading-tight text-tinta">
+                            Contas
+                        </h1>
+
+                        <p className="mt-1 text-sm text-tinta-claro">
+                            {contas.length === 0
+                                ? 'Nenhuma conta ainda'
+                                : contas.length === 1
+                                  ? '1 conta sua'
+                                  : `${contas.length} contas suas`}
+                        </p>
+                    </div>
+
+                    {contas.length > 0 && (
+                        <PrimaryButton
+                            type="button"
+                            onClick={() => abrirFormulario(null)}
+                        >
+                            Nova conta
+                        </PrimaryButton>
+                    )}
+                </div>
             }
         >
             <Head title="Contas" />
 
-            <div className="mx-auto max-w-3xl space-y-6 px-4 py-10 sm:px-6 lg:px-8">
-                <form
-                    onSubmit={criar}
-                    className="rounded-xl border border-tinta/10 bg-white p-6"
-                >
-                    <InputLabel htmlFor="nome" value="Nova conta" />
-
-                    <div className="mt-2 flex gap-3">
-                        <TextInput
-                            id="nome"
-                            value={data.nome}
-                            onChange={(evento) =>
-                                setData('nome', evento.target.value)
-                            }
-                            className="block w-full"
-                            autoComplete="off"
+            <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+                {contas.length === 0 ? (
+                    <div className="flex flex-col items-center rounded-xl border border-dashed border-tinta/20 bg-white/50 px-6 py-16 text-center">
+                        <span
+                            aria-hidden="true"
+                            className="h-20 w-20 rounded-full border-2 border-dashed border-tinta/25"
                         />
 
-                        <PrimaryButton disabled={processing}>
-                            Adicionar
+                        <h2 className="mt-6 font-display text-2xl font-semibold text-tinta">
+                            Nenhuma conta por aqui ainda
+                        </h2>
+
+                        <p className="mt-2 max-w-md text-sm leading-relaxed text-tinta-claro">
+                            Conta é só o registro de onde o dinheiro passou — não
+                            entra em nenhum cálculo. Cadastre as suas para saber,
+                            depois, de onde saiu cada gasto.
+                        </p>
+
+                        <PrimaryButton
+                            type="button"
+                            onClick={() => abrirFormulario(null)}
+                            className="mt-8"
+                        >
+                            Abrir a primeira conta
                         </PrimaryButton>
                     </div>
-
-                    <InputError message={errors.nome} className="mt-2" />
-                </form>
-
-                <div className="rounded-xl border border-tinta/10 bg-white">
-                    {contas.length === 0 ? (
-                        <p className="p-6 text-tinta/70">
-                            Nenhuma conta cadastrada ainda.
-                        </p>
-                    ) : (
-                        <ul className="divide-y divide-tinta/10">
-                            {contas.map((conta) => (
-                                <li
-                                    key={conta.id}
-                                    className="flex items-center justify-between p-4"
-                                >
-                                    <span className="text-tinta">
-                                        {conta.nome}
-                                    </span>
-
-                                    <DangerButton
-                                        onClick={() =>
-                                            destroy(
-                                                route(
-                                                    'contas.destroy',
-                                                    conta.id,
-                                                ),
-                                            )
-                                        }
-                                    >
-                                        Excluir
-                                    </DangerButton>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+                ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {contas.map((conta) => (
+                            <CartaoConta
+                                key={conta.id}
+                                conta={conta}
+                                cor={usuario.cor}
+                                aoRenomear={() => abrirFormulario(conta)}
+                                aoExcluir={() =>
+                                    setExclusao({ aberto: true, conta })
+                                }
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
+
+            <FormularioConta
+                key={`${formulario.conta?.id ?? 'nova'}-${aberturas}`}
+                conta={formulario.conta}
+                aberto={formulario.aberto}
+                aoFechar={fecharFormulario}
+            />
+
+            <ConfirmarExclusaoConta
+                conta={exclusao.conta}
+                aberto={exclusao.aberto}
+                aoFechar={fecharExclusao}
+            />
         </AuthenticatedLayout>
     );
 }

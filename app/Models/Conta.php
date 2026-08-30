@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[ScopedBy(DonoScope::class)]
 class Conta extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     protected $table = 'contas';
 
@@ -21,6 +22,18 @@ class Conta extends Model
         'usuario_id',
         'nome',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleted(function (Conta $conta): void {
+            if ($conta->isForceDeleting()) {
+                return;
+            }
+
+            $conta->formasPagamento()->delete();
+            $conta->cartoesCredito()->delete();
+        });
+    }
 
     /** @return BelongsTo<Usuario, $this> */
     public function usuario(): BelongsTo

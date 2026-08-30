@@ -50,6 +50,16 @@ composer check
 
 Que roda, em sequência: Pint (formatação), PHPStan/Larastan (análise estática), Pest (testes). Todos precisam passar antes de dar a tarefa por concluída — falha em qualquer um dos três significa a tarefa não está pronta.
 
+Em tarefas de frontend, `composer check` não cobre TypeScript. Rodar também:
+
+```bash
+npm run build
+```
+
+Que roda `tsc` (type-check, `strict: true`) e depois o build do Vite.
+
+**Não fazer teste manual no navegador.** Nada de abrir a aplicação, logar e clicar na tela para validar — a verificação é `composer check` e `npm run build`. A conferência visual é do usuário.
+
 ## Pontos de atenção conhecidos
 
 - `RecorrenciaMaterializador` precisa de `withoutGlobalScope(...)` explícito para processar despesas/rendas dos dois usuários — bypassar o scope errado quebra o isolamento entre usuários.
