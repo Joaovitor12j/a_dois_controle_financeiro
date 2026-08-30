@@ -1,6 +1,10 @@
 <?php
 
+use App\Domain\ValueObjects\Money;
+use App\Enums\TipoFormaPagamento;
+use App\Models\CartaoCredito;
 use App\Models\Conta;
+use App\Models\FormaPagamento;
 use App\Models\Scopes\DonoScope;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Auth;
@@ -90,6 +94,51 @@ it('atualiza e exclui a própria conta', function () {
         ->assertRedirect(route('contas.index'));
 
     expect(Conta::withoutGlobalScope(DonoScope::class)->count())->toBe(0);
+});
+
+it('soft-deleta a conta e cascateia para formas de pagamento e cartões', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDe($eu, 'Nubank');
+
+    $forma = FormaPagamento::create([
+        'conta_id' => $conta->id,
+        'nome' => 'Pix',
+        'tipo' => TipoFormaPagamento::Pix,
+    ]);
+
+    $cartao = CartaoCredito::create([
+        'conta_id' => $conta->id,
+        'nome' => 'Nubank Roxinho',
+        'limite_total' => Money::fromCents(100000),
+        'limite_usado_abertura' => Money::zero(),
+        'dia_fechamento' => 20,
+        'dia_vencimento' => 27,
+    ]);
+
+    $this->actingAs($eu)
+        ->delete(route('contas.destroy', $conta))
+        ->assertRedirect(route('contas.index'));
+
+    expect(Conta::withoutGlobalScope(DonoScope::class)->withTrashed()->find($conta->id)?->deleted_at)->not->toBeNull()
+        ->and(FormaPagamento::find($forma->id))->toBeNull()
+        ->and(CartaoCredito::find($cartao->id))->toBeNull()
+        ->and(FormaPagamento::withTrashed()->find($forma->id)?->deleted_at)->not->toBeNull()
+        ->and(CartaoCredito::withTrashed()->find($cartao->id)?->deleted_at)->not->toBeNull();
+});
+
+it('não cascateia soft delete ao forçar exclusão definitiva', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDe($eu, 'Itaú');
+
+    $forma = FormaPagamento::create([
+        'conta_id' => $conta->id,
+        'nome' => 'Débito',
+        'tipo' => TipoFormaPagamento::Debito,
+    ]);
+
+    $conta->forceDelete();
+
+    expect(FormaPagamento::withTrashed()->find($forma->id))->toBeNull();
 });
 
 it('não alcança a conta do parceiro', function (string $metodo, string $rota) {
