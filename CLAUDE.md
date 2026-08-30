@@ -4,7 +4,9 @@ Instruções de projeto para trabalhar neste repositório.
 
 ## Contexto
 
-Migração de controle-total (Next.js + Supabase + Drizzle) para Laravel + Breeze + Inertia + React. Banco novo, sem ETL — só os 2 usuários fixos são seedados. O Next.js antigo não é referência de código a seguir; `regras-de-negocio.md` é a fonte de verdade do domínio.
+Migração de controle-total (Next.js + Supabase + Drizzle) para Laravel + Breeze + Inertia + React. Banco novo, sem ETL — só os 2 usuários fixos são seedados. O Next.js antigo não é referência de código a seguir.
+
+O domínio está sendo redesenhado do zero, um domínio por vez. `docs/domain/` é a fonte de verdade das regras de negócio.
 
 ## Stack e ambiente
 
@@ -13,6 +15,15 @@ Migração de controle-total (Next.js + Supabase + Drizzle) para Laravel + Breez
 * Vite roda local (fora do container) para HMR
 * Portas: app 8083, Postgres 5487, Vite 5183
 * Testes: Pest, banco de teste Postgres real (`.env.testing`) — nunca SQLite. Garantias do domínio dependem de FK composta, CHECK constraints e enums nativos do Postgres.
+
+## Documentação do projeto
+
+* `CLAUDE.md` (este arquivo): como trabalhar no repositório — stack, padrões, verificação.
+* [`docs/domain/overview.md`](docs/domain/overview.md): conceitos gerais e compartilhados do domínio.
+* `docs/domain/<dominio>.md`: regras de um domínio específico (ex.: [`contas.md`](docs/domain/contas.md)).
+* [`docs/adr/`](docs/adr/README.md): decisões arquiteturais, uma por arquivo.
+
+A documentação representa intenção e regra de negócio. O código representa a implementação atual. Quando os dois divergirem, a documentação decide o que é correto.
 
 ## Arquitetura e exploração do repositório
 
@@ -23,11 +34,15 @@ O repositório possui decisões arquiteturais e regras de negócio já estabelec
 Ao analisar uma tarefa, seguir preferencialmente esta ordem:
 
 1. Consultar este `CLAUDE.md`.
-2. Consultar `regras-de-negocio.md` quando a tarefa envolver comportamento ou regra de domínio.
-3. Usar **Codebase Memory** para obter visão arquitetural, módulos, dependências e relações entre componentes.
-4. Usar **Serena** para navegação semântica, símbolos, referências e impacto de alterações.
-5. Ler arquivos-fonte somente quando for necessário conhecer detalhes da implementação.
-6. Usar **Context7** para documentação atualizada e específica de versão de frameworks, bibliotecas ou APIs.
+2. Consultar `docs/domain/overview.md` para o contexto geral do domínio.
+3. Consultar o documento do domínio envolvido na tarefa (`docs/domain/<dominio>.md`).
+4. Consultar `docs/adr/` quando a tarefa tocar uma decisão arquitetural.
+5. Usar **Codebase Memory** para obter visão arquitetural, módulos, dependências e relações entre componentes.
+6. Usar **Serena** para navegação semântica, símbolos, referências e impacto de alterações.
+7. Ler arquivos-fonte somente quando for necessário conhecer detalhes da implementação.
+8. Usar **Context7** para documentação atualizada e específica de versão de frameworks, bibliotecas ou APIs.
+
+Se o domínio da tarefa não tem documento em `docs/domain/`, ele ainda não foi redesenhado: suas regras não estão definidas e não devem ser inferidas do código ou da implementação legada. Perguntar ao usuário.
 
 ### Evitar exploração desnecessária
 
@@ -53,29 +68,46 @@ Ao analisar uma tarefa, seguir preferencialmente esta ordem:
 Ao criar um plano para uma alteração:
 
 1. Entender o objetivo e as regras de negócio envolvidas.
-2. Consultar `regras-de-negocio.md` quando aplicável.
-3. Consultar Codebase Memory para localizar a área arquitetural afetada.
-4. Usar Serena para localizar símbolos, referências e dependências relevantes.
-5. Ler somente os arquivos necessários para validar a implementação atual.
-6. Identificar testes existentes relacionados ao comportamento.
-7. Consultar Context7 quando houver dúvida sobre comportamento de framework, biblioteca ou API.
-8. Definir os arquivos que provavelmente serão alterados.
-9. Identificar impactos arquiteturais, de banco e de testes.
-10. Produzir o plano somente depois dessa investigação direcionada.
+2. Consultar `docs/domain/overview.md` e o documento do domínio afetado.
+3. Consultar `docs/adr/` se a alteração tocar uma decisão arquitetural.
+4. Consultar Codebase Memory para localizar a área arquitetural afetada.
+5. Usar Serena para localizar símbolos, referências e dependências relevantes.
+6. Ler somente os arquivos necessários para validar a implementação atual.
+7. Identificar testes existentes relacionados ao comportamento.
+8. Consultar Context7 quando houver dúvida sobre comportamento de framework, biblioteca ou API.
+9. Definir os arquivos que provavelmente serão alterados.
+10. Identificar impactos arquiteturais, de banco e de testes.
+11. Identificar as regras de negócio novas e as decisões arquiteturais que a tarefa vai gerar, e onde serão documentadas.
+12. Produzir o plano somente depois dessa investigação direcionada.
 
 O plano deve ser baseado no código e na arquitetura existentes, não em uma suposição de como o projeto deveria ser estruturado.
 
 Não criar planos baseados em uma varredura completa do repositório quando a área afetada puder ser identificada por Codebase Memory e Serena.
 
+## Documentação de novas decisões
+
+Desenvolvimento que produz regra ou decisão nova produz documentação na mesma tarefa:
+
+* Regra de negócio nova definida durante o desenvolvimento é documentada em `docs/domain/<dominio>.md`.
+* Domínio novo ganha documento próprio em `docs/domain/`, e entra no índice do `overview.md`.
+* Conceito que vale para mais de um domínio vai para o `overview.md`, não repetido em cada documento.
+* Decisão arquitetural relevante vira uma ADR nova em `docs/adr/`, com o próximo número da sequência, e entra no índice.
+* Regra não se duplica entre documentos: o overview não repete regra de domínio e o documento de domínio não repete conceito geral.
+* A documentação descreve intenção e regra, não implementação. Nomes de classe, coluna e rota ficam fora do corpo do texto.
+* Quando uma regra documentada antiga conflitar com uma decisão nova do usuário, a nova prevalece e a antiga é corrigida ou removida no mesmo momento — não coexistem.
+* Regra ainda não decidida vai para a seção "Questões em aberto" do documento, como pergunta. Nunca inventar regra para preencher lacuna.
+
 ## Decisões de arquitetura fechadas
 
-Não reabrir sem justificativa nova:
+Referência rápida. Cada item tem sua ADR em [`docs/adr/`](docs/adr/README.md); não reabrir sem justificativa nova.
 
-* **Auth = tabela de domínio**: `Usuario extends Authenticatable`, `$table = 'usuarios'`. Sem self-signup — registro, forgot-password e verificação de e-mail removidos do Breeze.
-* **Visibilidade via Eloquent, não RLS**: Global Scopes (`VisivelParaUsuarioScope`, `DonoScope`) + Policies. Sem RLS no Postgres.
-* **UUID via Eloquent** (`HasUuids`), não `DEFAULT gen_random_uuid()` no banco.
-* **`saldo_individual` é ledger append-only** — nunca um valor mutável. Saldo atual é sempre a soma dos lançamentos.
-* **Fechamento mensal / acerto / sobra**: removido do domínio atual. Não recriar essas entidades ou cálculos sem uma decisão explícita nova — a implementação anterior estava incorreta e será redesenhada do zero.
+* **Auth = tabela de domínio**: `Usuario extends Authenticatable`, `$table = 'usuarios'`. Sem self-signup. — [ADR 0001](docs/adr/0001-auth-sobre-tabela-de-dominio.md)
+* **Visibilidade via Eloquent, não RLS**: Global Scopes (`DonoScope`) + Policies. — [ADR 0002](docs/adr/0002-visibilidade-via-eloquent-sem-rls.md)
+* **UUID via Eloquent** (`HasUuids`), não `DEFAULT gen_random_uuid()` no banco. — [ADR 0003](docs/adr/0003-uuid-via-eloquent.md)
+* **Postgres real nos testes**, nunca SQLite. — [ADR 0004](docs/adr/0004-postgres-real-nos-testes.md)
+* **Value Objects** para dinheiro e conceitos de domínio. — [ADR 0005](docs/adr/0005-value-objects-para-dinheiro.md)
+* **Exclusão lógica com cascata na aplicação**. — [ADR 0006](docs/adr/0006-soft-delete-com-cascata-na-aplicacao.md)
+* **Fechamento mensal / acerto / sobra**: removidos do domínio. — [ADR 0007](docs/adr/0007-fechamento-mensal-removido-do-dominio.md)
 
 ## Padrões de código
 
@@ -114,15 +146,6 @@ Que roda `tsc` (type-check, `strict: true`) e depois o build do Vite.
 
 ## Pontos de atenção conhecidos
 
-* `RecorrenciaMaterializador` precisa de `withoutGlobalScope(...)` explícito para processar despesas/rendas dos dois usuários — bypassar o scope errado quebra o isolamento entre usuários.
-* FK composta `despesas(categoria_id, tipo) → categorias(id, tipo)`: despesa conjunta nunca pode referenciar categoria individual.
-* Despesa recorrente: `data` só muda dentro do mesmo mês (preserva "uma cópia por origem por mês" da materialização). Despesa avulsa muda livremente.
-
-
-## Fonte de verdade do domínio
-
-`regras-de-negocio.md` é a fonte de verdade das regras de negócio atualmente definidas.
-
-Regras ainda não documentadas não devem ser inferidas a partir da implementação legada ou de decisões anteriores.
-
-Quando uma regra existente estiver sendo redesenhada, a nova decisão explícita do usuário prevalece sobre o código legado e sobre regras anteriores.
+* `DonoScope` depende de `Auth::id()`. Sem usuário autenticado, toda query do model escopado devolve conjunto vazio — não erro. Processamento fora do ciclo de request (jobs, comandos, seeds) precisa de `withoutGlobalScope(DonoScope::class)` explícito, e remover o scope errado quebra o isolamento entre os usuários.
+* Autorização: chamar `$this->authorize()` em cada método do controller. `authorizeResource` não funciona corretamente no Laravel 12 neste projeto.
+* A cascata de exclusão lógica vive num hook do model pai e não dispara em exclusão feita fora do Eloquent.

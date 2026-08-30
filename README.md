@@ -31,5 +31,7 @@ docker-compose exec app php artisan test
 
 ## Documentação
 
-- [`regras-de-negocio.md`](./regras-de-negocio.md) — regras de domínio (recorrência, despesas, saldo individual, categorias/tags)
+- [`docs/domain/overview.md`](./docs/domain/overview.md) — conceitos gerais do domínio
+- [`docs/domain/`](./docs/domain/) — regras de negócio por domínio
+- [`docs/adr/`](./docs/adr/README.md) — decisões arquiteturais
 - [`CLAUDE.md`](./CLAUDE.md) — decisões de arquitetura e convenções para trabalhar neste repositório com Claude
