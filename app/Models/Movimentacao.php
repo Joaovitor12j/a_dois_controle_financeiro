@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\MoneyCast;
 use App\Domain\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -21,8 +22,6 @@ class Movimentacao extends Model
         'forma_pagamento_id',
         'valor',
         'data',
-        'despesa_id',
-        'renda_id',
         'fatura_id',
         'is_saldo_inicial',
     ];
@@ -31,7 +30,7 @@ class Movimentacao extends Model
     protected function casts(): array
     {
         return [
-            'valor' => Money::class,
+            'valor' => MoneyCast::class,
             'data' => 'date',
             'is_saldo_inicial' => 'boolean',
         ];

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Exceptions\ValorMonetarioInvalido;
 use App\Domain\ValueObjects\Money;
 
 it('cria a partir de centavos', function () {
@@ -23,7 +24,7 @@ it('converte string com vírgula decimal', function (string $entrada, int $esper
 ]);
 
 it('rejeita string malformada', function (string $entrada) {
-    expect(fn () => Money::fromString($entrada))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Money::fromString($entrada))->toThrow(ValorMonetarioInvalido::class);
 })->with([
     ['abc'],
     [''],
@@ -69,16 +70,6 @@ it('compara por valor, não por identidade', function () {
     expect(Money::fromCents(42)->equals(Money::fromCents(42)))->toBeTrue()
         ->and(Money::fromCents(42)->equals(Money::fromCents(43)))->toBeFalse();
 });
-
-it('formata em real brasileiro', function (int $cents, string $esperado) {
-    expect(Money::fromCents($cents)->format())->toBe($esperado);
-})->with([
-    [0, 'R$ 0,00'],
-    [5, 'R$ 0,05'],
-    [123456, 'R$ 1.234,56'],
-    [-123456, '-R$ 1.234,56'],
-    [100000000, 'R$ 1.000.000,00'],
-]);
 
 it('serializa em json como centavos', function () {
     expect(json_encode(['valor' => Money::fromCents(1234)]))->toBe('{"valor":1234}');

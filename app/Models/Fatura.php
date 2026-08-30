@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Casts\CompetenciaCast;
+use App\Domain\ValueObjects\Competencia;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Competencia $competencia
+ */
 class Fatura extends Model
 {
     use HasUuids;
@@ -23,7 +28,7 @@ class Fatura extends Model
     protected function casts(): array
     {
         return [
-            'competencia' => 'date',
+            'competencia' => CompetenciaCast::class,
         ];
     }
 
