@@ -46,6 +46,7 @@ conjunta não deve ser tratada como individual.
 | Domínio | Documento |
 | --- | --- |
 | Contas | [contas.md](contas.md) |
+| Formas de pagamento | [formas-pagamento.md](formas-pagamento.md) |
 
 ## Estado do redesenho
 
