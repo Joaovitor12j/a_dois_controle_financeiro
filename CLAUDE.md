@@ -86,6 +86,8 @@ Não criar planos baseados em uma varredura completa do repositório quando a á
 
 ## Documentação de novas decisões
 
+Sempre que o prompt enviado pelo usuário impactar regra de negócio de um domínio — criar, alterar ou tornar explícita uma regra —, o documento de domínio correspondente em `docs/domain/` deve ser criado ou atualizado na mesma tarefa, mesmo que o prompt não peça documentação explicitamente. Isso vale mesmo quando o pedido é só "implementar o CRUD de X": a especificação de campos, validações e invariantes dada no prompt já é regra de negócio nova quando o domínio ainda não tinha documento.
+
 Desenvolvimento que produz regra ou decisão nova produz documentação na mesma tarefa:
 
 * Regra de negócio nova definida durante o desenvolvimento é documentada em `docs/domain/<dominio>.md`.
