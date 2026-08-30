@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\MoneyCast;
 use App\Domain\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,8 +33,8 @@ class CartaoCredito extends Model
     protected function casts(): array
     {
         return [
-            'limite_total' => Money::class,
-            'limite_usado_abertura' => Money::class,
+            'limite_total' => MoneyCast::class,
+            'limite_usado_abertura' => MoneyCast::class,
             'dia_fechamento' => 'integer',
             'dia_vencimento' => 'integer',
         ];

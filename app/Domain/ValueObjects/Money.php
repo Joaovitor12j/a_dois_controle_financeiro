@@ -2,12 +2,10 @@
 
 namespace App\Domain\ValueObjects;
 
-use App\Casts\MoneyCast;
-use Illuminate\Contracts\Database\Eloquent\Castable;
-use InvalidArgumentException;
+use App\Domain\Exceptions\ValorMonetarioInvalido;
 use JsonSerializable;
 
-final readonly class Money implements Castable, JsonSerializable
+final readonly class Money implements JsonSerializable
 {
     private function __construct(public int $cents) {}
 
@@ -30,7 +28,7 @@ final readonly class Money implements Castable, JsonSerializable
             : $trimmed;
 
         if (preg_match('/^-?\d+(\.\d{1,2})?$/', $normalized) !== 1) {
-            throw new InvalidArgumentException("Valor monetário inválido: {$amount}");
+            throw ValorMonetarioInvalido::paraEntrada($amount);
         }
 
         [$whole, $fraction] = array_pad(explode('.', $normalized), 2, '0');
@@ -83,20 +81,6 @@ final readonly class Money implements Castable, JsonSerializable
     public function equals(self $other): bool
     {
         return $this->cents === $other->cents;
-    }
-
-    public function format(): string
-    {
-        $sign = $this->cents < 0 ? '-' : '';
-        $absolute = abs($this->cents);
-
-        return $sign.'R$ '.number_format(intdiv($absolute, 100), 0, ',', '.').','.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
-    }
-
-    /** @param array<string> $arguments */
-    public static function castUsing(array $arguments): MoneyCast
-    {
-        return new MoneyCast;
     }
 
     public function jsonSerialize(): int

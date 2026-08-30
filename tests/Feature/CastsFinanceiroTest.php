@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\ValueObjects\Competencia;
 use App\Domain\ValueObjects\Money;
 use App\Enums\TipoFormaPagamento;
 use App\Models\CartaoCredito;
@@ -8,12 +9,16 @@ use App\Models\Fatura;
 use App\Models\FormaPagamento;
 use App\Models\Movimentacao;
 use App\Models\Usuario;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 function contaDeTeste(): Conta
 {
+    $usuario = Usuario::factory()->create();
+    Auth::login($usuario);
+
     return Conta::create([
-        'usuario_id' => Usuario::factory()->create()->id,
+        'usuario_id' => $usuario->id,
         'nome' => 'Conta Principal',
     ]);
 }
@@ -111,4 +116,22 @@ it('encadeia as relations do módulo financeiro', function () {
     expect($conta->cartoesCredito->pluck('id')->all())->toBe([$cartao->id]);
     expect($cartao->faturas->pluck('id')->all())->toBe([$fatura->id]);
     expect($forma->movimentacoes->pluck('id')->all())->toBe([$movimentacao->id]);
+});
+
+it('grava competência de fatura como primeiro dia do mês e a devolve como Competencia', function () {
+    $cartao = CartaoCredito::create([
+        'conta_id' => contaDeTeste()->id,
+        'nome' => 'Cartão',
+        'limite_total' => Money::fromCents(100000),
+        'dia_fechamento' => 5,
+        'dia_vencimento' => 12,
+    ]);
+
+    $fatura = Fatura::create([
+        'cartao_credito_id' => $cartao->id,
+        'competencia' => '2026-09',
+    ]);
+
+    expect(DB::table('faturas')->where('id', $fatura->id)->value('competencia'))->toBe('2026-09-01');
+    expect($fatura->fresh()?->competencia)->toEqual(Competencia::deAnoMes(2026, 9));
 });
