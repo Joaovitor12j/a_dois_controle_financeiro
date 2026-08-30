@@ -88,7 +88,6 @@ Não reabrir sem justificativa nova:
 
 ## Testes
 
-* Toda regra de negócio documentada em `regras-de-negocio.md` tem teste correspondente — sem meta numérica de cobertura, o critério é regra coberta, não porcentagem de linha.
 * Pest, banco de teste Postgres real (nunca SQLite/in-memory) — ver seção Stack e ambiente.
 * Feature test = HTTP + banco; Unit test = função/Value Object puro, sem framework.
 * Value Objects testados isoladamente (validação de invariantes, imutabilidade).
@@ -118,3 +117,12 @@ Que roda `tsc` (type-check, `strict: true`) e depois o build do Vite.
 * `RecorrenciaMaterializador` precisa de `withoutGlobalScope(...)` explícito para processar despesas/rendas dos dois usuários — bypassar o scope errado quebra o isolamento entre usuários.
 * FK composta `despesas(categoria_id, tipo) → categorias(id, tipo)`: despesa conjunta nunca pode referenciar categoria individual.
 * Despesa recorrente: `data` só muda dentro do mesmo mês (preserva "uma cópia por origem por mês" da materialização). Despesa avulsa muda livremente.
+
+
+## Fonte de verdade do domínio
+
+`regras-de-negocio.md` é a fonte de verdade das regras de negócio atualmente definidas.
+
+Regras ainda não documentadas não devem ser inferidas a partir da implementação legada ou de decisões anteriores.
+
+Quando uma regra existente estiver sendo redesenhada, a nova decisão explícita do usuário prevalece sobre o código legado e sobre regras anteriores.
