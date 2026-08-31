@@ -48,6 +48,7 @@ conjunta não deve ser tratada como individual.
 | Contas | [contas.md](contas.md) |
 | Formas de pagamento | [formas-pagamento.md](formas-pagamento.md) |
 | Rendas | [rendas.md](rendas.md) |
+| Despesas | [despesas.md](despesas.md) |
 
 ## Estado do redesenho
 
@@ -62,9 +63,17 @@ Para todo o resto:
 - nenhuma regra deve ser inferida da implementação legada — enquanto o domínio
   não for redesenhado e documentado, ele não tem regra definida.
 
+## Como o contexto conjunto se materializa financeiramente
+
+Conta é sempre individual (ver [contas.md](contas.md)) — o contexto conjunto
+não passa por conta nem por rateio entre contas individuais.
+
+Despesa foi o primeiro domínio a resolver isso: carrega um campo `contexto`
+(`individual`/`conjunta`) que determina sua visibilidade — ver
+[despesas.md](despesas.md) e [ADR 0010](../adr/0010-visibilidade-de-despesa-contexto-individual-conjunta.md).
+Outros domínios que vierem a precisar de contexto conjunto seguem o mesmo
+mecanismo.
+
 ## Questões em aberto
 
-- **Como o contexto conjunto se materializa financeiramente.** Está definido que
-  conta é sempre individual (ver [contas.md](contas.md)). Ainda não está definido
-  por onde uma movimentação conjunta é efetivamente paga: se fora do conceito de
-  conta, se por rateio sobre as contas individuais, ou por outro mecanismo.
+Nenhuma no momento além das registradas em cada documento de domínio.
