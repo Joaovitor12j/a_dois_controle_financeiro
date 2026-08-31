@@ -5,6 +5,7 @@ use App\Http\Controllers\ContaController;
 use App\Http\Controllers\FormaPagamentoController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RendaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -31,6 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('cartoes-credito', CartaoCreditoController::class)
         ->except(['index', 'create', 'edit', 'show'])
         ->parameters(['cartoes-credito' => 'cartaoCredito']);
+    Route::resource('rendas', RendaController::class)->except(['create', 'edit', 'show']);
 });
 
 require __DIR__.'/auth.php';
