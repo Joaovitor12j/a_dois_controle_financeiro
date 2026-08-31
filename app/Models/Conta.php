@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Models\Scopes\DonoScope;
-use App\Support\LogoDev;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -32,11 +31,7 @@ class Conta extends Model
     protected function logoUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => LogoDev::getLogoUrlByName($this->nome, [
-                'size' => 96,
-                'format' => 'png',
-                'fallback' => '404',
-            ]),
+            get: fn () => route('logos.show', $this->nome),
         );
     }
 
