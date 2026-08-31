@@ -146,6 +146,7 @@ export default function Index({ contas }: { contas: Conta[] }) {
                         <PrimaryButton
                             type="button"
                             onClick={() => abrirFormulario(null)}
+                            className="!rounded-xl !bg-verde-escuro hover:!bg-verde"
                         >
                             Nova conta
                         </PrimaryButton>
@@ -176,13 +177,13 @@ export default function Index({ contas }: { contas: Conta[] }) {
                         <PrimaryButton
                             type="button"
                             onClick={() => abrirFormulario(null)}
-                            className="mt-8"
+                            className="mt-8 !rounded-xl !bg-verde-escuro hover:!bg-verde"
                         >
                             Abrir a primeira conta
                         </PrimaryButton>
                     </div>
                 ) : (
-                    <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid items-start gap-6 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
                         {contas.map((conta) => (
                             <CartaoConta
                                 key={conta.id}

@@ -300,7 +300,7 @@ function LinhaCartaoCredito({
         <li className="py-2.5">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                    <span className="shrink-0 rounded-full bg-tinta/10 px-2.5 py-0.5 text-xs font-semibold text-tinta">
+                    <span className="shrink-0 rounded-full bg-vinho/10 px-2.5 py-0.5 text-xs font-semibold text-vinho-escuro">
                         Cartão
                     </span>
 
@@ -374,7 +374,7 @@ export default function CartaoConta({
         conta.cartoes_credito.length === 0;
 
     return (
-        <article className="flex flex-col self-start rounded-xl border border-tinta/10 bg-white transition duration-200 ease-out hover:-translate-y-0.5 hover:border-tinta/20 hover:shadow-lg hover:shadow-tinta/5 motion-reduce:transform-none motion-reduce:transition-none">
+        <article className="flex flex-col self-start rounded-xl border border-tinta/10 bg-white shadow-sm shadow-tinta/5 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-tinta/20 hover:shadow-lg hover:shadow-tinta/5 motion-reduce:transform-none motion-reduce:transition-none">
             <div className="flex items-start gap-4 p-5">
                 <AvatarConta nome={conta.nome} logoUrl={conta.logo_url} cor={cor} />
 
