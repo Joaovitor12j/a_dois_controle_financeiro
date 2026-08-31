@@ -1,11 +1,13 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import type { Conta, FormaPagamento } from '@/types';
+import type { CartaoCredito, Conta, FormaPagamento } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import CartaoConta from './Partials/CartaoConta';
+import ConfirmarExclusaoCartaoCredito from './Partials/ConfirmarExclusaoCartaoCredito';
 import ConfirmarExclusaoConta from './Partials/ConfirmarExclusaoConta';
 import ConfirmarExclusaoFormaPagamento from './Partials/ConfirmarExclusaoFormaPagamento';
+import FormularioCartaoCredito from './Partials/FormularioCartaoCredito';
 import FormularioConta from './Partials/FormularioConta';
 import FormularioFormaPagamento from './Partials/FormularioFormaPagamento';
 
@@ -25,6 +27,17 @@ interface AlvoDeExclusaoFormaPagamento {
     formaPagamento: FormaPagamento | null;
 }
 
+interface AlvoDeFormularioCartaoCredito {
+    aberto: boolean;
+    conta: Conta | null;
+    cartaoCredito: CartaoCredito | null;
+}
+
+interface AlvoDeExclusaoCartaoCredito {
+    aberto: boolean;
+    cartaoCredito: CartaoCredito | null;
+}
+
 const modalFechado: AlvoDeModal = { aberto: false, conta: null };
 
 const formularioFormaPagamentoFechado: AlvoDeFormularioFormaPagamento = {
@@ -36,6 +49,17 @@ const formularioFormaPagamentoFechado: AlvoDeFormularioFormaPagamento = {
 const exclusaoFormaPagamentoFechada: AlvoDeExclusaoFormaPagamento = {
     aberto: false,
     formaPagamento: null,
+};
+
+const formularioCartaoCreditoFechado: AlvoDeFormularioCartaoCredito = {
+    aberto: false,
+    conta: null,
+    cartaoCredito: null,
+};
+
+const exclusaoCartaoCreditoFechada: AlvoDeExclusaoCartaoCredito = {
+    aberto: false,
+    cartaoCredito: null,
 };
 
 export default function Index({ contas }: { contas: Conta[] }) {
@@ -52,6 +76,14 @@ export default function Index({ contas }: { contas: Conta[] }) {
     const [exclusaoFormaPagamento, setExclusaoFormaPagamento] =
         useState<AlvoDeExclusaoFormaPagamento>(exclusaoFormaPagamentoFechada);
     const [aberturasFormaPagamento, setAberturasFormaPagamento] = useState(0);
+
+    const [formularioCartaoCredito, setFormularioCartaoCredito] =
+        useState<AlvoDeFormularioCartaoCredito>(
+            formularioCartaoCreditoFechado,
+        );
+    const [exclusaoCartaoCredito, setExclusaoCartaoCredito] =
+        useState<AlvoDeExclusaoCartaoCredito>(exclusaoCartaoCreditoFechada);
+    const [aberturasCartaoCredito, setAberturasCartaoCredito] = useState(0);
 
     const abrirFormulario = (conta: Conta | null) => {
         setAberturas((quantas) => quantas + 1);
@@ -77,6 +109,20 @@ export default function Index({ contas }: { contas: Conta[] }) {
 
     const fecharExclusaoFormaPagamento = () =>
         setExclusaoFormaPagamento((atual) => ({ ...atual, aberto: false }));
+
+    const abrirFormularioCartaoCredito = (
+        conta: Conta,
+        cartaoCredito: CartaoCredito | null,
+    ) => {
+        setAberturasCartaoCredito((quantas) => quantas + 1);
+        setFormularioCartaoCredito({ aberto: true, conta, cartaoCredito });
+    };
+
+    const fecharFormularioCartaoCredito = () =>
+        setFormularioCartaoCredito((atual) => ({ ...atual, aberto: false }));
+
+    const fecharExclusaoCartaoCredito = () =>
+        setExclusaoCartaoCredito((atual) => ({ ...atual, aberto: false }));
 
     return (
         <AuthenticatedLayout
@@ -136,7 +182,7 @@ export default function Index({ contas }: { contas: Conta[] }) {
                         </PrimaryButton>
                     </div>
                 ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {contas.map((conta) => (
                             <CartaoConta
                                 key={conta.id}
@@ -159,6 +205,21 @@ export default function Index({ contas }: { contas: Conta[] }) {
                                     setExclusaoFormaPagamento({
                                         aberto: true,
                                         formaPagamento,
+                                    })
+                                }
+                                aoCriarCartaoCredito={() =>
+                                    abrirFormularioCartaoCredito(conta, null)
+                                }
+                                aoEditarCartaoCredito={(cartaoCredito) =>
+                                    abrirFormularioCartaoCredito(
+                                        conta,
+                                        cartaoCredito,
+                                    )
+                                }
+                                aoExcluirCartaoCredito={(cartaoCredito) =>
+                                    setExclusaoCartaoCredito({
+                                        aberto: true,
+                                        cartaoCredito,
                                     })
                                 }
                             />
@@ -192,6 +253,20 @@ export default function Index({ contas }: { contas: Conta[] }) {
                 formaPagamento={exclusaoFormaPagamento.formaPagamento}
                 aberto={exclusaoFormaPagamento.aberto}
                 aoFechar={fecharExclusaoFormaPagamento}
+            />
+
+            <FormularioCartaoCredito
+                key={`${formularioCartaoCredito.cartaoCredito?.id ?? formularioCartaoCredito.conta?.id ?? 'novo'}-${aberturasCartaoCredito}`}
+                contaId={formularioCartaoCredito.conta?.id ?? null}
+                cartaoCredito={formularioCartaoCredito.cartaoCredito}
+                aberto={formularioCartaoCredito.aberto}
+                aoFechar={fecharFormularioCartaoCredito}
+            />
+
+            <ConfirmarExclusaoCartaoCredito
+                cartaoCredito={exclusaoCartaoCredito.cartaoCredito}
+                aberto={exclusaoCartaoCredito.aberto}
+                aoFechar={fecharExclusaoCartaoCredito}
             />
         </AuthenticatedLayout>
     );

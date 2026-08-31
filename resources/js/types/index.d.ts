@@ -26,6 +26,10 @@ export interface CartaoCredito {
     id: string;
     conta_id: string;
     nome: string;
+    limite_total: number;
+    limite_usado_abertura: number;
+    dia_fechamento: number;
+    dia_vencimento: number;
 }
 
 export interface Conta {
