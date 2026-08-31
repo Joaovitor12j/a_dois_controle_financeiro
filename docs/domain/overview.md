@@ -47,7 +47,6 @@ conjunta não deve ser tratada como individual.
 | --- | --- |
 | Contas | [contas.md](contas.md) |
 | Formas de pagamento | [formas-pagamento.md](formas-pagamento.md) |
-| Cartões de crédito | [cartoes-credito.md](cartoes-credito.md) |
 | Rendas | [rendas.md](rendas.md) |
 
 ## Estado do redesenho

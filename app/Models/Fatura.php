@@ -35,7 +35,7 @@ class Fatura extends Model
     /** @return BelongsTo<CartaoCredito, $this> */
     public function cartaoCredito(): BelongsTo
     {
-        return $this->belongsTo(CartaoCredito::class);
+        return $this->belongsTo(CartaoCredito::class, 'cartao_credito_id', 'forma_pagamento_id');
     }
 
     /** @return HasMany<Movimentacao, $this> */

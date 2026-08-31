@@ -1,10 +1,5 @@
 import Dropdown from '@/Components/Dropdown';
-import type {
-    CartaoCredito,
-    Conta,
-    FormaPagamento,
-    TipoFormaPagamento,
-} from '@/types';
+import type { Conta, FormaPagamento, TipoFormaPagamento } from '@/types';
 import {
     Disclosure,
     DisclosureButton,
@@ -26,12 +21,14 @@ const rotuloTipo: Record<TipoFormaPagamento, string> = {
     debito: 'Débito',
     dinheiro: 'Dinheiro',
     pix: 'Pix',
+    credito: 'Crédito',
 };
 
 const corTipo: Record<TipoFormaPagamento, string> = {
     debito: 'bg-tinta/10 text-tinta',
     dinheiro: 'bg-verde/10 text-verde-escuro',
     pix: 'bg-ouro/20 text-ouro',
+    credito: 'bg-vinho/10 text-vinho-escuro',
 };
 
 function Seta({ aberta }: { aberta: boolean }) {
@@ -255,93 +252,65 @@ function LinhaFormaPagamento({
     aoExcluir: () => void;
 }) {
     return (
-        <li className="flex items-center justify-between gap-3 py-2.5">
-            <div className="flex min-w-0 items-center gap-3">
-                <span
-                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${corTipo[formaPagamento.tipo]}`}
-                >
-                    {rotuloTipo[formaPagamento.tipo]}
-                </span>
-
-                <span className="min-w-0 truncate text-sm font-medium text-tinta">
-                    {formaPagamento.nome}
-                </span>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-                {formaPagamento.saldo_inicial && (
-                    <span className="mr-1 text-sm tabular-nums text-tinta-claro">
-                        {formatadorDeMoeda.format(
-                            formaPagamento.saldo_inicial.valor / 100,
-                        )}
-                    </span>
-                )}
-
-                <BotaoEditar rotulo="Editar forma de pagamento" aoClicar={aoEditar} />
-                <BotaoExcluir
-                    rotulo="Excluir forma de pagamento"
-                    aoClicar={aoExcluir}
-                />
-            </div>
-        </li>
-    );
-}
-
-function LinhaCartaoCredito({
-    cartaoCredito,
-    aoEditar,
-    aoExcluir,
-}: {
-    cartaoCredito: CartaoCredito;
-    aoEditar: () => void;
-    aoExcluir: () => void;
-}) {
-    return (
         <li className="py-2.5">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                    <span className="shrink-0 rounded-full bg-vinho/10 px-2.5 py-0.5 text-xs font-semibold text-vinho-escuro">
-                        Cartão
+                    <span
+                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${corTipo[formaPagamento.tipo]}`}
+                    >
+                        {rotuloTipo[formaPagamento.tipo]}
                     </span>
 
                     <span className="min-w-0 truncate text-sm font-medium text-tinta">
-                        {cartaoCredito.nome}
+                        {formaPagamento.nome}
                     </span>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
+                    {formaPagamento.saldo_inicial && (
+                        <span className="mr-1 text-sm tabular-nums text-tinta-claro">
+                            {formatadorDeMoeda.format(
+                                formaPagamento.saldo_inicial.valor / 100,
+                            )}
+                        </span>
+                    )}
+
                     <BotaoEditar
-                        rotulo="Editar cartão de crédito"
+                        rotulo="Editar forma de pagamento"
                         aoClicar={aoEditar}
                     />
                     <BotaoExcluir
-                        rotulo="Excluir cartão de crédito"
+                        rotulo="Excluir forma de pagamento"
                         aoClicar={aoExcluir}
                     />
                 </div>
             </div>
 
-            <dl className="mt-2 grid grid-cols-2 gap-3">
-                <div>
-                    <dt className="text-xs text-tinta-claro">Limite</dt>
-                    <dd className="text-sm font-medium tabular-nums text-tinta">
-                        {formatadorDeMoeda.format(
-                            cartaoCredito.limite_total / 100,
-                        )}
-                    </dd>
-                </div>
+            {formaPagamento.cartao_credito && (
+                <dl className="mt-2 grid grid-cols-2 gap-3">
+                    <div>
+                        <dt className="text-xs text-tinta-claro">Limite</dt>
+                        <dd className="text-sm font-medium tabular-nums text-tinta">
+                            {formatadorDeMoeda.format(
+                                formaPagamento.cartao_credito.limite_total /
+                                    100,
+                            )}
+                        </dd>
+                    </div>
 
-                <div>
-                    <dt className="text-xs text-tinta-claro">
-                        Usado na abertura
-                    </dt>
-                    <dd className="text-sm font-medium tabular-nums text-tinta">
-                        {formatadorDeMoeda.format(
-                            cartaoCredito.limite_usado_abertura / 100,
-                        )}
-                    </dd>
-                </div>
-            </dl>
+                    <div>
+                        <dt className="text-xs text-tinta-claro">
+                            Usado na abertura
+                        </dt>
+                        <dd className="text-sm font-medium tabular-nums text-tinta">
+                            {formatadorDeMoeda.format(
+                                formaPagamento.cartao_credito
+                                    .limite_usado_abertura / 100,
+                            )}
+                        </dd>
+                    </div>
+                </dl>
+            )}
         </li>
     );
 }
@@ -354,9 +323,6 @@ export default function CartaoConta({
     aoCriarFormaPagamento,
     aoEditarFormaPagamento,
     aoExcluirFormaPagamento,
-    aoCriarCartaoCredito,
-    aoEditarCartaoCredito,
-    aoExcluirCartaoCredito,
 }: {
     conta: Conta;
     cor: string;
@@ -365,13 +331,8 @@ export default function CartaoConta({
     aoCriarFormaPagamento: () => void;
     aoEditarFormaPagamento: (formaPagamento: FormaPagamento) => void;
     aoExcluirFormaPagamento: (formaPagamento: FormaPagamento) => void;
-    aoCriarCartaoCredito: () => void;
-    aoEditarCartaoCredito: (cartaoCredito: CartaoCredito) => void;
-    aoExcluirCartaoCredito: (cartaoCredito: CartaoCredito) => void;
 }) {
-    const contaVazia =
-        conta.formas_pagamento.length === 0 &&
-        conta.cartoes_credito.length === 0;
+    const contaVazia = conta.formas_pagamento.length === 0;
 
     return (
         <article className="flex flex-col self-start rounded-xl border border-tinta/10 bg-white shadow-sm shadow-tinta/5 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-tinta/20 hover:shadow-lg hover:shadow-tinta/5 motion-reduce:transform-none motion-reduce:transition-none">
@@ -394,19 +355,13 @@ export default function CartaoConta({
             {contaVazia ? (
                 <div className="flex flex-col items-start gap-3 border-t border-tinta/10 px-5 py-6">
                     <p className="text-sm text-tinta-claro">
-                        Nenhuma forma de pagamento nem cartão de crédito
-                        cadastrado nesta conta ainda.
+                        Nenhuma forma de pagamento cadastrada nesta conta
+                        ainda.
                     </p>
 
-                    <div className="flex flex-wrap gap-2">
-                        <BotaoAdicionar aoClicar={aoCriarFormaPagamento}>
-                            Forma de pagamento
-                        </BotaoAdicionar>
-
-                        <BotaoAdicionar aoClicar={aoCriarCartaoCredito}>
-                            Cartão de crédito
-                        </BotaoAdicionar>
-                    </div>
+                    <BotaoAdicionar aoClicar={aoCriarFormaPagamento}>
+                        Forma de pagamento
+                    </BotaoAdicionar>
                 </div>
             ) : (
                 <div className="border-t border-tinta/10">
@@ -415,128 +370,44 @@ export default function CartaoConta({
                             <>
                                 <DisclosureButton className="flex w-full items-center justify-between px-5 py-2.5 text-sm font-medium text-tinta hover:bg-papel focus:outline-none focus:ring-2 focus:ring-ouro">
                                     <span>
-                                        Formas de pagamento
-                                        {conta.formas_pagamento.length > 0 &&
-                                            ` (${conta.formas_pagamento.length})`}
+                                        Formas de pagamento (
+                                        {conta.formas_pagamento.length})
                                     </span>
 
                                     <Seta aberta={open} />
                                 </DisclosureButton>
 
                                 <DisclosurePanel className="px-5 pb-4">
-                                    {conta.formas_pagamento.length === 0 ? (
-                                        <div className="flex flex-col items-start gap-2 py-2">
-                                            <p className="text-sm text-tinta-claro">
-                                                Nenhuma forma de pagamento
-                                                cadastrada nesta conta.
-                                            </p>
+                                    <ul className="divide-y divide-tinta/10">
+                                        {conta.formas_pagamento.map(
+                                            (formaPagamento) => (
+                                                <LinhaFormaPagamento
+                                                    key={formaPagamento.id}
+                                                    formaPagamento={
+                                                        formaPagamento
+                                                    }
+                                                    aoEditar={() =>
+                                                        aoEditarFormaPagamento(
+                                                            formaPagamento,
+                                                        )
+                                                    }
+                                                    aoExcluir={() =>
+                                                        aoExcluirFormaPagamento(
+                                                            formaPagamento,
+                                                        )
+                                                    }
+                                                />
+                                            ),
+                                        )}
+                                    </ul>
 
-                                            <BotaoAdicionar
-                                                aoClicar={aoCriarFormaPagamento}
-                                            >
-                                                Forma de pagamento
-                                            </BotaoAdicionar>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <ul className="divide-y divide-tinta/10">
-                                                {conta.formas_pagamento.map(
-                                                    (formaPagamento) => (
-                                                        <LinhaFormaPagamento
-                                                            key={formaPagamento.id}
-                                                            formaPagamento={
-                                                                formaPagamento
-                                                            }
-                                                            aoEditar={() =>
-                                                                aoEditarFormaPagamento(
-                                                                    formaPagamento,
-                                                                )
-                                                            }
-                                                            aoExcluir={() =>
-                                                                aoExcluirFormaPagamento(
-                                                                    formaPagamento,
-                                                                )
-                                                            }
-                                                        />
-                                                    ),
-                                                )}
-                                            </ul>
-
-                                            <div className="mt-3">
-                                                <BotaoAdicionar
-                                                    aoClicar={aoCriarFormaPagamento}
-                                                >
-                                                    Forma de pagamento
-                                                </BotaoAdicionar>
-                                            </div>
-                                        </>
-                                    )}
-                                </DisclosurePanel>
-                            </>
-                        )}
-                    </Disclosure>
-
-                    <Disclosure>
-                        {({ open }) => (
-                            <>
-                                <DisclosureButton className="flex w-full items-center justify-between border-t border-tinta/10 px-5 py-2.5 text-sm font-medium text-tinta hover:bg-papel focus:outline-none focus:ring-2 focus:ring-ouro">
-                                    <span>
-                                        Cartões de crédito
-                                        {conta.cartoes_credito.length > 0 &&
-                                            ` (${conta.cartoes_credito.length})`}
-                                    </span>
-
-                                    <Seta aberta={open} />
-                                </DisclosureButton>
-
-                                <DisclosurePanel className="px-5 pb-4">
-                                    {conta.cartoes_credito.length === 0 ? (
-                                        <div className="flex flex-col items-start gap-2 py-2">
-                                            <p className="text-sm text-tinta-claro">
-                                                Nenhum cartão de crédito
-                                                cadastrado nesta conta.
-                                            </p>
-
-                                            <BotaoAdicionar
-                                                aoClicar={aoCriarCartaoCredito}
-                                            >
-                                                Cartão de crédito
-                                            </BotaoAdicionar>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <ul className="divide-y divide-tinta/10">
-                                                {conta.cartoes_credito.map(
-                                                    (cartaoCredito) => (
-                                                        <LinhaCartaoCredito
-                                                            key={cartaoCredito.id}
-                                                            cartaoCredito={
-                                                                cartaoCredito
-                                                            }
-                                                            aoEditar={() =>
-                                                                aoEditarCartaoCredito(
-                                                                    cartaoCredito,
-                                                                )
-                                                            }
-                                                            aoExcluir={() =>
-                                                                aoExcluirCartaoCredito(
-                                                                    cartaoCredito,
-                                                                )
-                                                            }
-                                                        />
-                                                    ),
-                                                )}
-                                            </ul>
-
-                                            <div className="mt-3">
-                                                <BotaoAdicionar
-                                                    aoClicar={aoCriarCartaoCredito}
-                                                >
-                                                    Cartão de crédito
-                                                </BotaoAdicionar>
-                                            </div>
-                                        </>
-                                    )}
+                                    <div className="mt-3">
+                                        <BotaoAdicionar
+                                            aoClicar={aoCriarFormaPagamento}
+                                        >
+                                            Forma de pagamento
+                                        </BotaoAdicionar>
+                                    </div>
                                 </DisclosurePanel>
                             </>
                         )}

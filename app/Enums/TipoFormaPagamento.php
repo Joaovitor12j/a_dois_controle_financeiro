@@ -7,6 +7,7 @@ enum TipoFormaPagamento: string
     case Debito = 'debito';
     case Dinheiro = 'dinheiro';
     case Pix = 'pix';
+    case Credito = 'credito';
 
     public function rotulo(): string
     {
@@ -14,6 +15,7 @@ enum TipoFormaPagamento: string
             self::Debito => 'Débito',
             self::Dinheiro => 'Dinheiro',
             self::Pix => 'Pix',
+            self::Credito => 'Crédito',
         };
     }
 }

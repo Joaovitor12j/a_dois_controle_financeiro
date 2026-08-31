@@ -12,7 +12,14 @@ export interface Movimentacao {
     is_saldo_inicial: boolean;
 }
 
-export type TipoFormaPagamento = 'debito' | 'dinheiro' | 'pix';
+export type TipoFormaPagamento = 'debito' | 'dinheiro' | 'pix' | 'credito';
+
+export interface CartaoCredito {
+    limite_total: number;
+    limite_usado_abertura: number;
+    dia_fechamento: number;
+    dia_vencimento: number;
+}
 
 export interface FormaPagamento {
     id: string;
@@ -20,16 +27,7 @@ export interface FormaPagamento {
     nome: string;
     tipo: TipoFormaPagamento;
     saldo_inicial: Movimentacao | null;
-}
-
-export interface CartaoCredito {
-    id: string;
-    conta_id: string;
-    nome: string;
-    limite_total: number;
-    limite_usado_abertura: number;
-    dia_fechamento: number;
-    dia_vencimento: number;
+    cartao_credito: CartaoCredito | null;
 }
 
 export interface Conta {
@@ -40,7 +38,6 @@ export interface Conta {
     created_at: string;
     updated_at: string;
     formas_pagamento: FormaPagamento[];
-    cartoes_credito: CartaoCredito[];
 }
 
 export type TipoRecorrencia = 'unica' | 'mensal';

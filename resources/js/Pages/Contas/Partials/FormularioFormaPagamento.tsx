@@ -14,6 +14,7 @@ const rotuloTipo: Record<TipoFormaPagamento, string> = {
     debito: 'Débito',
     dinheiro: 'Dinheiro',
     pix: 'Pix',
+    credito: 'Crédito',
 };
 
 function paraCentavos(valorEmReais: string): number | null {
@@ -26,6 +27,10 @@ function paraCentavos(valorEmReais: string): number | null {
     const numero = Number(normalizado);
 
     return Number.isFinite(numero) ? Math.round(numero * 100) : null;
+}
+
+function paraReais(valorEmCentavos: number): string {
+    return (valorEmCentavos / 100).toFixed(2).replace('.', ',');
 }
 
 export default function FormularioFormaPagamento({
@@ -54,11 +59,29 @@ export default function FormularioFormaPagamento({
         tipo: formaPagamento?.tipo ?? ('debito' as TipoFormaPagamento),
         saldo_inicial: '',
         data_saldo_inicial: '',
+        limite_total: formaPagamento?.cartao_credito
+            ? paraReais(formaPagamento.cartao_credito.limite_total)
+            : '',
+        limite_usado_abertura: '',
+        dia_fechamento: formaPagamento?.cartao_credito
+            ? String(formaPagamento.cartao_credito.dia_fechamento)
+            : '',
+        dia_vencimento: formaPagamento?.cartao_credito
+            ? String(formaPagamento.cartao_credito.dia_vencimento)
+            : '',
     });
+
+    const ehCredito = data.tipo === 'credito';
 
     transform((dados) => ({
         ...dados,
         saldo_inicial: paraCentavos(dados.saldo_inicial),
+        limite_total: paraCentavos(dados.limite_total),
+        limite_usado_abertura: paraCentavos(dados.limite_usado_abertura),
+        dia_fechamento:
+            dados.dia_fechamento === '' ? null : Number(dados.dia_fechamento),
+        dia_vencimento:
+            dados.dia_vencimento === '' ? null : Number(dados.dia_vencimento),
     }));
 
     const submit: FormEventHandler = (evento) => {
@@ -89,8 +112,8 @@ export default function FormularioFormaPagamento({
 
                 <p className="mt-1.5 text-sm text-tinta-claro">
                     {formaPagamento
-                        ? 'Ajuste o nome ou o tipo desta forma de pagamento.'
-                        : 'Débito, dinheiro ou pix — o meio por onde o dinheiro passa nesta conta.'}
+                        ? 'Ajuste o nome desta forma de pagamento.'
+                        : 'Débito, dinheiro, pix ou crédito — o meio por onde o dinheiro passa nesta conta.'}
                 </p>
 
                 <FormErrorSummary errors={errors} />
@@ -117,28 +140,38 @@ export default function FormularioFormaPagamento({
                 <div className="mt-4">
                     <InputLabel htmlFor="tipo" value="Tipo" />
 
-                    <SelectInput
-                        id="tipo"
-                        className="mt-1.5 block w-full"
-                        value={data.tipo}
-                        onChange={(evento) =>
-                            setData(
-                                'tipo',
-                                evento.target.value as TipoFormaPagamento,
-                            )
-                        }
-                    >
-                        {Object.entries(rotuloTipo).map(([valor, rotulo]) => (
-                            <option key={valor} value={valor}>
-                                {rotulo}
-                            </option>
-                        ))}
-                    </SelectInput>
+                    {formaPagamento ? (
+                        <p className="mt-1.5 text-sm font-medium text-tinta">
+                            {rotuloTipo[formaPagamento.tipo]}
+                        </p>
+                    ) : (
+                        <>
+                            <SelectInput
+                                id="tipo"
+                                className="mt-1.5 block w-full"
+                                value={data.tipo}
+                                onChange={(evento) =>
+                                    setData(
+                                        'tipo',
+                                        evento.target.value as TipoFormaPagamento,
+                                    )
+                                }
+                            >
+                                {Object.entries(rotuloTipo).map(
+                                    ([valor, rotulo]) => (
+                                        <option key={valor} value={valor}>
+                                            {rotulo}
+                                        </option>
+                                    ),
+                                )}
+                            </SelectInput>
 
-                    <InputError className="mt-2" message={errors.tipo} />
+                            <InputError className="mt-2" message={errors.tipo} />
+                        </>
+                    )}
                 </div>
 
-                {!formaPagamento && (
+                {!formaPagamento && !ehCredito && (
                     <>
                         <div className="mt-4">
                             <InputLabel
@@ -193,6 +226,117 @@ export default function FormularioFormaPagamento({
                                 />
                             </div>
                         )}
+                    </>
+                )}
+
+                {ehCredito && (
+                    <>
+                        <div className="mt-4">
+                            <InputLabel
+                                htmlFor="limite_total"
+                                value="Limite total"
+                            />
+
+                            <TextInput
+                                id="limite_total"
+                                className="mt-1.5 block w-full"
+                                inputMode="decimal"
+                                value={data.limite_total}
+                                onChange={(evento) =>
+                                    setData('limite_total', evento.target.value)
+                                }
+                                placeholder="0,00"
+                            />
+
+                            <InputError
+                                className="mt-2"
+                                message={errors.limite_total}
+                            />
+                        </div>
+
+                        {!formaPagamento && (
+                            <div className="mt-4">
+                                <InputLabel
+                                    htmlFor="limite_usado_abertura"
+                                    value="Limite já usado na abertura (opcional)"
+                                />
+
+                                <TextInput
+                                    id="limite_usado_abertura"
+                                    className="mt-1.5 block w-full"
+                                    inputMode="decimal"
+                                    value={data.limite_usado_abertura}
+                                    onChange={(evento) =>
+                                        setData(
+                                            'limite_usado_abertura',
+                                            evento.target.value,
+                                        )
+                                    }
+                                    placeholder="0,00"
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.limite_usado_abertura}
+                                />
+                            </div>
+                        )}
+
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                            <div>
+                                <InputLabel
+                                    htmlFor="dia_fechamento"
+                                    value="Dia de fechamento"
+                                />
+
+                                <TextInput
+                                    id="dia_fechamento"
+                                    className="mt-1.5 block w-full"
+                                    type="number"
+                                    min={1}
+                                    max={31}
+                                    value={data.dia_fechamento}
+                                    onChange={(evento) =>
+                                        setData(
+                                            'dia_fechamento',
+                                            evento.target.value,
+                                        )
+                                    }
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.dia_fechamento}
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel
+                                    htmlFor="dia_vencimento"
+                                    value="Dia de vencimento"
+                                />
+
+                                <TextInput
+                                    id="dia_vencimento"
+                                    className="mt-1.5 block w-full"
+                                    type="number"
+                                    min={1}
+                                    max={31}
+                                    value={data.dia_vencimento}
+                                    onChange={(evento) =>
+                                        setData(
+                                            'dia_vencimento',
+                                            evento.target.value,
+                                        )
+                                    }
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.dia_vencimento}
+                                />
+                            </div>
+                        </div>
                     </>
                 )}
 

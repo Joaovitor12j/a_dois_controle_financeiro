@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\TipoFormaPagamento;
+use App\Models\FormaPagamento;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateFormaPagamentoRequest extends FormRequest
 {
@@ -17,9 +16,16 @@ class UpdateFormaPagamentoRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
+        /** @var FormaPagamento $formaPagamento */
+        $formaPagamento = $this->route('formaPagamento');
+        $ehCredito = $formaPagamento->ehCredito() ? 'required' : 'prohibited';
+
         return [
             'nome' => ['required', 'string', 'max:255'],
-            'tipo' => ['required', Rule::enum(TipoFormaPagamento::class)],
+            'tipo' => ['prohibited'],
+            'limite_total' => [$ehCredito, 'integer', 'min:0'],
+            'dia_fechamento' => [$ehCredito, 'integer', 'between:1,31'],
+            'dia_vencimento' => [$ehCredito, 'integer', 'between:1,31'],
         ];
     }
 }

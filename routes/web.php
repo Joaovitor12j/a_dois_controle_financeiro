@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\CartaoCreditoController;
 use App\Http\Controllers\ContaController;
 use App\Http\Controllers\FormaPagamentoController;
 use App\Http\Controllers\LogoController;
@@ -29,9 +28,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('formas-pagamento', FormaPagamentoController::class)
         ->except(['index', 'create', 'edit', 'show'])
         ->parameters(['formas-pagamento' => 'formaPagamento']);
-    Route::resource('cartoes-credito', CartaoCreditoController::class)
-        ->except(['index', 'create', 'edit', 'show'])
-        ->parameters(['cartoes-credito' => 'cartaoCredito']);
     Route::resource('rendas', RendaController::class)->except(['create', 'edit', 'show']);
 });
 

@@ -51,4 +51,15 @@ class FormaPagamento extends Model
     {
         return $this->hasOne(Movimentacao::class)->where('is_saldo_inicial', true);
     }
+
+    /** @return HasOne<CartaoCredito, $this> */
+    public function cartaoCredito(): HasOne
+    {
+        return $this->hasOne(CartaoCredito::class, 'forma_pagamento_id');
+    }
+
+    public function ehCredito(): bool
+    {
+        return $this->tipo === TipoFormaPagamento::Credito;
+    }
 }

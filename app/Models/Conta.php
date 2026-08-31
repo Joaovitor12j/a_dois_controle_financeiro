@@ -43,7 +43,6 @@ class Conta extends Model
             }
 
             $conta->formasPagamento()->delete();
-            $conta->cartoesCredito()->delete();
         });
     }
 
@@ -57,11 +56,5 @@ class Conta extends Model
     public function formasPagamento(): HasMany
     {
         return $this->hasMany(FormaPagamento::class);
-    }
-
-    /** @return HasMany<CartaoCredito, $this> */
-    public function cartoesCredito(): HasMany
-    {
-        return $this->hasMany(CartaoCredito::class);
     }
 }

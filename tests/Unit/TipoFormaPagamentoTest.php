@@ -4,7 +4,7 @@ use App\Enums\TipoFormaPagamento;
 
 it('cobre exatamente os valores do enum nativo do banco', function () {
     expect(array_column(TipoFormaPagamento::cases(), 'value'))
-        ->toBe(['debito', 'dinheiro', 'pix']);
+        ->toBe(['debito', 'dinheiro', 'pix', 'credito']);
 });
 
 it('expõe rótulo para exibição', function (TipoFormaPagamento $tipo, string $esperado) {
@@ -13,4 +13,5 @@ it('expõe rótulo para exibição', function (TipoFormaPagamento $tipo, string 
     [TipoFormaPagamento::Debito, 'Débito'],
     [TipoFormaPagamento::Dinheiro, 'Dinheiro'],
     [TipoFormaPagamento::Pix, 'Pix'],
+    [TipoFormaPagamento::Credito, 'Crédito'],
 ]);

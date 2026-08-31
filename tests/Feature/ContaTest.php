@@ -109,9 +109,14 @@ it('soft-deleta a conta e cascateia para formas de pagamento e cartões', functi
         'tipo' => TipoFormaPagamento::Pix,
     ]);
 
-    $cartao = CartaoCredito::create([
+    $formaCredito = FormaPagamento::create([
         'conta_id' => $conta->id,
         'nome' => 'Nubank Roxinho',
+        'tipo' => TipoFormaPagamento::Credito,
+    ]);
+
+    $cartao = CartaoCredito::create([
+        'forma_pagamento_id' => $formaCredito->id,
         'limite_total' => Money::fromCents(100000),
         'limite_usado_abertura' => Money::zero(),
         'dia_fechamento' => 20,
@@ -124,9 +129,10 @@ it('soft-deleta a conta e cascateia para formas de pagamento e cartões', functi
 
     expect(Conta::withoutGlobalScope(DonoScope::class)->withTrashed()->find($conta->id)?->deleted_at)->not->toBeNull()
         ->and(FormaPagamento::find($forma->id))->toBeNull()
-        ->and(CartaoCredito::find($cartao->id))->toBeNull()
+        ->and(FormaPagamento::find($formaCredito->id))->toBeNull()
         ->and(FormaPagamento::withTrashed()->find($forma->id)?->deleted_at)->not->toBeNull()
-        ->and(CartaoCredito::withTrashed()->find($cartao->id)?->deleted_at)->not->toBeNull();
+        ->and(FormaPagamento::withTrashed()->find($formaCredito->id)?->deleted_at)->not->toBeNull()
+        ->and(CartaoCredito::find($cartao->forma_pagamento_id))->not->toBeNull();
 });
 
 it('não cascateia soft delete ao forçar exclusão definitiva', function () {

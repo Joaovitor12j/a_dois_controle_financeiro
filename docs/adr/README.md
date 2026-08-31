@@ -25,3 +25,4 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0006](0006-soft-delete-com-cascata-na-aplicacao.md) | Exclusão lógica com cascata na aplicação | Aceita |
 | [0007](0007-fechamento-mensal-removido-do-dominio.md) | Fechamento mensal, acerto e sobra removidos do domínio | Aceita |
 | [0008](0008-feedback-via-flash-nativo-do-inertia-e-log-so-de-excecao.md) | Feedback de ação via flash nativo do Inertia, log só de exceção não tratada | Aceita |
+| [0009](0009-cartao-de-credito-como-extensao-de-forma-de-pagamento.md) | Cartão de crédito como extensão de forma de pagamento | Aceita |

@@ -35,6 +35,7 @@ it('persiste e recupera o enum nativo de tipo de forma de pagamento', function (
     TipoFormaPagamento::Debito,
     TipoFormaPagamento::Dinheiro,
     TipoFormaPagamento::Pix,
+    TipoFormaPagamento::Credito,
 ]);
 
 it('aceita o valor bruto do enum vindo de request', function () {
@@ -48,9 +49,14 @@ it('aceita o valor bruto do enum vindo de request', function () {
 });
 
 it('recupera limites do cartão como Money', function () {
-    $cartao = CartaoCredito::create([
+    $forma = FormaPagamento::create([
         'conta_id' => contaDeTeste()->id,
         'nome' => 'Cartão',
+        'tipo' => TipoFormaPagamento::Credito,
+    ]);
+
+    $cartao = CartaoCredito::create([
+        'forma_pagamento_id' => $forma->id,
         'limite_total' => Money::fromString('5.000,00'),
         'limite_usado_abertura' => Money::fromCents(12345),
         'dia_fechamento' => 10,
@@ -83,16 +89,21 @@ it('grava valor de movimentação em centavos e o devolve como Money', function 
 it('encadeia as relations do módulo financeiro', function () {
     $conta = contaDeTeste();
 
-    $cartao = CartaoCredito::create([
+    $formaCredito = FormaPagamento::create([
         'conta_id' => $conta->id,
         'nome' => 'Cartão',
+        'tipo' => TipoFormaPagamento::Credito,
+    ]);
+
+    $cartao = CartaoCredito::create([
+        'forma_pagamento_id' => $formaCredito->id,
         'limite_total' => Money::fromCents(100000),
         'dia_fechamento' => 5,
         'dia_vencimento' => 12,
     ]);
 
     $fatura = Fatura::create([
-        'cartao_credito_id' => $cartao->id,
+        'cartao_credito_id' => $cartao->forma_pagamento_id,
         'competencia' => '2026-09-01',
     ]);
 
@@ -111,24 +122,30 @@ it('encadeia as relations do módulo financeiro', function () {
 
     expect($movimentacao->formaPagamento->is($forma))->toBeTrue();
     expect($movimentacao->fatura->is($fatura))->toBeTrue();
-    expect($fatura->cartaoCredito->conta->usuario->is($conta->usuario))->toBeTrue();
-    expect($conta->formasPagamento->pluck('id')->all())->toBe([$forma->id]);
-    expect($conta->cartoesCredito->pluck('id')->all())->toBe([$cartao->id]);
+    expect($fatura->cartaoCredito->formaPagamento->conta->usuario->is($conta->usuario))->toBeTrue();
+    expect($conta->formasPagamento->pluck('id')->sort()->values()->all())
+        ->toBe(collect([$formaCredito->id, $forma->id])->sort()->values()->all());
+    expect($formaCredito->cartaoCredito->is($cartao))->toBeTrue();
     expect($cartao->faturas->pluck('id')->all())->toBe([$fatura->id]);
     expect($forma->movimentacoes->pluck('id')->all())->toBe([$movimentacao->id]);
 });
 
 it('grava competência de fatura como primeiro dia do mês e a devolve como Competencia', function () {
-    $cartao = CartaoCredito::create([
+    $forma = FormaPagamento::create([
         'conta_id' => contaDeTeste()->id,
         'nome' => 'Cartão',
+        'tipo' => TipoFormaPagamento::Credito,
+    ]);
+
+    $cartao = CartaoCredito::create([
+        'forma_pagamento_id' => $forma->id,
         'limite_total' => Money::fromCents(100000),
         'dia_fechamento' => 5,
         'dia_vencimento' => 12,
     ]);
 
     $fatura = Fatura::create([
-        'cartao_credito_id' => $cartao->id,
+        'cartao_credito_id' => $cartao->forma_pagamento_id,
         'competencia' => '2026-09',
     ]);
 
