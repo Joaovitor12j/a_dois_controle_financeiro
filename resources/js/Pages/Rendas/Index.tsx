@@ -67,6 +67,178 @@ function BotaoEditar({
     );
 }
 
+const iconesPorNome: Record<string, JSX.Element> = {
+    wallet: (
+        <>
+            <rect
+                x="3"
+                y="6"
+                width="14"
+                height="10"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="1.4"
+            />
+            <path
+                d="M3 8.5h14"
+                stroke="currentColor"
+                strokeWidth="1.4"
+            />
+            <circle cx="14" cy="12" r="1" fill="currentColor" />
+        </>
+    ),
+    briefcase: (
+        <>
+            <rect
+                x="3"
+                y="7"
+                width="14"
+                height="9"
+                rx="1.5"
+                stroke="currentColor"
+                strokeWidth="1.4"
+            />
+            <path
+                d="M7.5 7V5.5A1.5 1.5 0 0 1 9 4h2a1.5 1.5 0 0 1 1.5 1.5V7"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path d="M3 11h14" stroke="currentColor" strokeWidth="1.4" />
+        </>
+    ),
+    'trending-up': (
+        <>
+            <path
+                d="M3 13l5-5 3 3 6-6"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M13 5h4v4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </>
+    ),
+    gift: (
+        <>
+            <rect
+                x="3"
+                y="9"
+                width="14"
+                height="8"
+                rx="1"
+                stroke="currentColor"
+                strokeWidth="1.4"
+            />
+            <path d="M3 9h14" stroke="currentColor" strokeWidth="1.4" />
+            <path d="M10 9v8" stroke="currentColor" strokeWidth="1.4" />
+            <path
+                d="M10 9c-1.5 0-3-1-3-2.5S8.2 4 9.3 4C10.5 4 10 6.5 10 9Z"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M10 9c1.5 0 3-1 3-2.5S11.8 4 10.7 4C9.5 4 10 6.5 10 9Z"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+            />
+        </>
+    ),
+    'rotate-ccw': (
+        <>
+            <path
+                d="M4 8a6 6 0 1 1 1.5 6"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                fill="none"
+            />
+            <path
+                d="M4 4v4h4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+            />
+        </>
+    ),
+    'more-horizontal': (
+        <>
+            <circle cx="4" cy="10" r="1.3" fill="currentColor" />
+            <circle cx="10" cy="10" r="1.3" fill="currentColor" />
+            <circle cx="16" cy="10" r="1.3" fill="currentColor" />
+        </>
+    ),
+};
+
+const iconeIndefinido = (
+    <>
+        <path
+            d="M10 3h5.5a1.5 1.5 0 0 1 1.5 1.5V10a1.5 1.5 0 0 1-.44 1.06l-6 6a1.5 1.5 0 0 1-2.12 0l-5.5-5.5a1.5 1.5 0 0 1 0-2.12l6-6A1.5 1.5 0 0 1 10 3Z"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+        />
+        <circle cx="13" cy="7" r="1" fill="currentColor" />
+    </>
+);
+
+function IconeCategoria({ icone, cor }: { icone: string; cor: string }) {
+    return (
+        <span
+            aria-hidden="true"
+            title={icone}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+            style={{ backgroundColor: `${cor}1f` }}
+        >
+            <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                className="h-3.5 w-3.5"
+                style={{ color: cor }}
+            >
+                {iconesPorNome[icone] ?? iconeIndefinido}
+            </svg>
+        </span>
+    );
+}
+
+function LogoConta({ nome, logoUrl }: { nome: string; logoUrl: string }) {
+    const [logoFalhou, setLogoFalhou] = useState(false);
+    const inicial = nome.trim().charAt(0).toUpperCase();
+
+    if (logoFalhou) {
+        return (
+            <span
+                aria-hidden="true"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-tinta/10 text-[10px] font-bold text-tinta"
+            >
+                {inicial}
+            </span>
+        );
+    }
+
+    return (
+        <img
+            src={logoUrl}
+            alt=""
+            aria-hidden="true"
+            className="h-6 w-6 shrink-0 rounded-full object-cover"
+            onError={() => setLogoFalhou(true)}
+        />
+    );
+}
+
 function BotaoExcluir({
     rotulo,
     aoClicar,
@@ -210,26 +382,30 @@ export default function Index({
 
                                         <td className="px-5 py-3.5">
                                             <span className="inline-flex items-center gap-2 text-tinta-claro">
-                                                <span
-                                                    aria-hidden="true"
-                                                    title={
+                                                <IconeCategoria
+                                                    icone={
                                                         renda.categoria_renda
                                                             .icone
                                                     }
-                                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                                    style={{
-                                                        backgroundColor:
-                                                            renda
-                                                                .categoria_renda
-                                                                .cor,
-                                                    }}
+                                                    cor={
+                                                        renda.categoria_renda
+                                                            .cor
+                                                    }
                                                 />
                                                 {renda.categoria_renda.nome}
                                             </span>
                                         </td>
 
                                         <td className="px-5 py-3.5 text-tinta-claro">
-                                            {renda.conta.nome}
+                                            <span className="inline-flex items-center gap-2">
+                                                <LogoConta
+                                                    nome={renda.conta.nome}
+                                                    logoUrl={
+                                                        renda.conta.logo_url
+                                                    }
+                                                />
+                                                {renda.conta.nome}
+                                            </span>
                                         </td>
 
                                         <td className="px-5 py-3.5 text-right tabular-nums text-tinta">

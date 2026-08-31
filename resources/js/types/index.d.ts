@@ -45,6 +45,7 @@ export type TipoRecorrencia = 'unica' | 'mensal';
 export interface ContaResumo {
     id: string;
     nome: string;
+    logo_url: string;
 }
 
 export interface CategoriaRenda {
