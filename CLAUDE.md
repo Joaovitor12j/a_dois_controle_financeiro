@@ -110,6 +110,7 @@ Referência rápida. Cada item tem sua ADR em [`docs/adr/`](docs/adr/README.md);
 * **Value Objects** para dinheiro e conceitos de domínio. — [ADR 0005](docs/adr/0005-value-objects-para-dinheiro.md)
 * **Exclusão lógica com cascata na aplicação**. — [ADR 0006](docs/adr/0006-soft-delete-com-cascata-na-aplicacao.md)
 * **Fechamento mensal / acerto / sobra**: removidos do domínio. — [ADR 0007](docs/adr/0007-fechamento-mensal-removido-do-dominio.md)
+* **Feedback ao usuário via flash nativo do Inertia, log só de exceção não tratada**. — [ADR 0008](docs/adr/0008-feedback-via-flash-nativo-do-inertia-e-log-so-de-excecao.md)
 
 ## Padrões de código
 
@@ -125,6 +126,33 @@ Referência rápida. Cada item tem sua ADR em [`docs/adr/`](docs/adr/README.md);
 * Pest, banco de teste Postgres real (nunca SQLite/in-memory) — ver seção Stack e ambiente.
 * Feature test = HTTP + banco; Unit test = função/Value Object puro, sem framework.
 * Value Objects testados isoladamente (validação de invariantes, imutabilidade).
+
+## Feedback ao usuário e logs
+
+Ver [ADR 0008](docs/adr/0008-feedback-via-flash-nativo-do-inertia-e-log-so-de-excecao.md) para o
+porquê. Aqui só o operacional.
+
+**Feedback de ação**: nenhuma ação (criar/editar/excluir) deve ficar sem retorno visível.
+* Erro de validação por campo continua em `errors.<campo>` + `<InputError>`, mas cada formulário
+  também renderiza `<FormErrorSummary errors={errors} />` — mostra qualquer erro presente,
+  independente de qual campo (visível ou escondido por renderização condicional) o carrega.
+* Sucesso e falha genérica (rede caiu, exceção inesperada, resposta que não é Inertia válida) usam o
+  `Toast` global, montado no `AuthenticatedLayout`. Sucesso: controller chama
+  `Inertia::flash('toast', ['type' => 'success', 'message' => '...'])` antes do `Redirect::route(...)`.
+  Acesso no frontend é `usePage().flash.toast` — **não** `usePage().props.flash.toast` (o `flash`
+  nativo do Inertia v2 é campo de nível raiz de `page`, irmão de `props`, não uma prop).
+
+**Log**: canal `daily`, retenção `LOG_DAILY_DAYS=14` (`storage/logs/laravel-YYYY-MM-DD.log`). Todo
+log de exceção carrega `usuario_id` do usuário autenticado (`$exceptions->context()` em
+`bootstrap/app.php`).
+* O que é logado: só exceção não tratada (bug genuíno) — comportamento padrão do Laravel, sem
+  `report()`/`level()` customizado.
+* O que **não** é logado, de propósito: `ValidationException`, `AuthorizationException`,
+  `ModelNotFoundException` — fluxo esperado, já vira mensagem na tela.
+* Acesso: `docker-compose.yml` monta bind mount completo (`volumes: - .:/app`) — o arquivo já existe
+  direto no host em `storage/logs/`, sem precisar `docker compose exec`.
+  * Tail no host: `tail -f storage/logs/laravel-$(date +%Y-%m-%d).log`
+  * Tempo real dentro do container: `docker compose exec -u 1000:1000 app php artisan pail`
 
 ## Verificação antes de concluir uma tarefa
 

@@ -30,6 +30,8 @@ class ContaController extends Controller
 
         $this->contas->criar($request->validated());
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Conta criada com sucesso.']);
+
         return Redirect::route('contas.index');
     }
 
@@ -39,6 +41,8 @@ class ContaController extends Controller
 
         $this->contas->atualizar($conta, $request->validated());
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Conta atualizada com sucesso.']);
+
         return Redirect::route('contas.index');
     }
 
@@ -47,6 +51,8 @@ class ContaController extends Controller
         $this->authorize('delete', $conta);
 
         $this->contas->excluir($conta);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Conta excluída com sucesso.']);
 
         return Redirect::route('contas.index');
     }

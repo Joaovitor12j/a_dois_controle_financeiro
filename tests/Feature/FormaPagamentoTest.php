@@ -24,7 +24,8 @@ it('cria forma de pagamento sem saldo inicial', function () {
             'nome' => 'Pix Nubank',
             'tipo' => 'pix',
         ])
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento criada com sucesso.']);
 
     $forma = FormaPagamento::sole();
 
@@ -45,7 +46,8 @@ it('cria forma de pagamento com saldo inicial', function () {
             'saldo_inicial' => 5000,
             'data_saldo_inicial' => '2026-08-01',
         ])
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento criada com sucesso.']);
 
     $forma = FormaPagamento::sole();
     $movimentacao = Movimentacao::sole();
@@ -77,7 +79,8 @@ it('atualiza a própria forma de pagamento', function () {
 
     $this->actingAs($eu)
         ->put(route('formas-pagamento.update', $forma), ['nome' => 'Débito Nubank', 'tipo' => 'debito'])
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento atualizada com sucesso.']);
 
     expect($forma->fresh()?->nome)->toBe('Débito Nubank');
 });
@@ -102,7 +105,8 @@ it('exclui a própria forma de pagamento', function () {
 
     $this->actingAs($eu)
         ->delete(route('formas-pagamento.destroy', $forma))
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento excluída com sucesso.']);
 
     expect(FormaPagamento::find($forma->id))->toBeNull();
 });

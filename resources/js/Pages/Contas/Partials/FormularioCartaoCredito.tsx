@@ -1,3 +1,4 @@
+import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
@@ -90,6 +91,8 @@ export default function FormularioCartaoCredito({
                         ? 'Ajuste o nome, o limite ou o ciclo de fatura deste cartão.'
                         : 'Limite e ciclo de fatura do cartão nesta conta.'}
                 </p>
+
+                <FormErrorSummary errors={errors} />
 
                 <div className="mt-6">
                     <InputLabel htmlFor="nome" value="Nome" />

@@ -1,3 +1,4 @@
+import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
@@ -125,6 +126,8 @@ export default function FormularioRenda({
                         ? 'Ajuste os dados desta entrada financeira.'
                         : 'Uma entrada financeira, vinculada a uma conta e a uma categoria.'}
                 </p>
+
+                <FormErrorSummary errors={errors} />
 
                 <div className="mt-6">
                     <InputLabel htmlFor="descricao" value="Descrição" />

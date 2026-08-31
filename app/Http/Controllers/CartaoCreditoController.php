@@ -8,6 +8,7 @@ use App\Models\CartaoCredito;
 use App\Services\Financeiro\CartaoCreditoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Inertia\Inertia;
 
 class CartaoCreditoController extends Controller
 {
@@ -15,7 +16,11 @@ class CartaoCreditoController extends Controller
 
     public function store(StoreCartaoCreditoRequest $request): RedirectResponse
     {
+        $this->authorize('create', CartaoCredito::class);
+
         $this->cartoesCredito->criar($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cartão de crédito criado com sucesso.']);
 
         return Redirect::route('contas.index');
     }
@@ -23,6 +28,8 @@ class CartaoCreditoController extends Controller
     public function update(UpdateCartaoCreditoRequest $request, CartaoCredito $cartaoCredito): RedirectResponse
     {
         $this->cartoesCredito->atualizar($cartaoCredito, $request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cartão de crédito atualizado com sucesso.']);
 
         return Redirect::route('contas.index');
     }
@@ -32,6 +39,8 @@ class CartaoCreditoController extends Controller
         $this->authorize('delete', $cartaoCredito);
 
         $this->cartoesCredito->excluir($cartaoCredito);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cartão de crédito excluído com sucesso.']);
 
         return Redirect::route('contas.index');
     }

@@ -1,3 +1,4 @@
+import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
@@ -91,6 +92,8 @@ export default function FormularioFormaPagamento({
                         ? 'Ajuste o nome ou o tipo desta forma de pagamento.'
                         : 'Débito, dinheiro ou pix — o meio por onde o dinheiro passa nesta conta.'}
                 </p>
+
+                <FormErrorSummary errors={errors} />
 
                 <div className="mt-6">
                     <InputLabel htmlFor="nome" value="Nome" />

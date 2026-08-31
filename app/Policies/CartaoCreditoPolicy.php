@@ -9,6 +9,11 @@ use App\Models\Usuario;
 
 class CartaoCreditoPolicy
 {
+    public function create(Usuario $usuario): bool
+    {
+        return true;
+    }
+
     public function update(Usuario $usuario, CartaoCredito $cartaoCredito): bool
     {
         return $this->pertenceAoUsuario($usuario, $cartaoCredito);

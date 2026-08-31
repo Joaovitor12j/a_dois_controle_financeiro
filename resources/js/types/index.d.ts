@@ -73,13 +73,15 @@ export interface Renda {
     categoria_renda: CategoriaRenda;
 }
 
+export type Toast = {
+    type: 'success' | 'error';
+    message: string;
+};
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         usuario: Usuario | null;
-    };
-    flash: {
-        status: string | null;
     };
 };

@@ -32,6 +32,8 @@ class RendaController extends Controller
 
         $this->rendas->criar($request->validated());
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda criada com sucesso.']);
+
         return Redirect::route('rendas.index');
     }
 
@@ -41,6 +43,8 @@ class RendaController extends Controller
 
         $this->rendas->atualizar($renda, $request->validated());
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda atualizada com sucesso.']);
+
         return Redirect::route('rendas.index');
     }
 
@@ -49,6 +53,8 @@ class RendaController extends Controller
         $this->authorize('delete', $renda);
 
         $this->rendas->excluir($renda);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda excluída com sucesso.']);
 
         return Redirect::route('rendas.index');
     }

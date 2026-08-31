@@ -9,6 +9,11 @@ use App\Models\Usuario;
 
 class FormaPagamentoPolicy
 {
+    public function create(Usuario $usuario): bool
+    {
+        return true;
+    }
+
     public function update(Usuario $usuario, FormaPagamento $formaPagamento): bool
     {
         return $this->pertenceAoUsuario($usuario, $formaPagamento);

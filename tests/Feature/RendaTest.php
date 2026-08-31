@@ -188,7 +188,8 @@ it('cria renda com sucesso quando a recorrência é única', function () {
 
     $this->actingAs($eu)
         ->post(route('rendas.store'), payloadRendaUnica($conta, $categoria))
-        ->assertRedirect(route('rendas.index'));
+        ->assertRedirect(route('rendas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Renda criada com sucesso.']);
 
     $renda = Renda::sole();
 
@@ -206,7 +207,8 @@ it('cria renda com sucesso quando a recorrência é mensal', function () {
 
     $this->actingAs($eu)
         ->post(route('rendas.store'), payloadRendaMensal($conta, $categoria))
-        ->assertRedirect(route('rendas.index'));
+        ->assertRedirect(route('rendas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Renda criada com sucesso.']);
 
     $renda = Renda::sole();
 
@@ -252,6 +254,8 @@ it('falha ao criar renda mensal sem data_inicio', function () {
     expect(Renda::count())->toBe(0);
 });
 
+// dia_recebimento só tem <InputError> no ramo "mensal" do formulário — este erro cai num campo
+// escondido quando a recorrência é "única", motivo pelo qual FormErrorSummary existe (ADR 0008).
 it('falha ao criar renda única com dia_recebimento preenchido', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioRenda($eu);
@@ -319,7 +323,8 @@ it('atualiza a própria renda', function () {
 
     $this->actingAs($eu)
         ->put(route('rendas.update', $renda), payloadRendaUnica($conta, $categoria, ['descricao' => 'Novo']))
-        ->assertRedirect(route('rendas.index'));
+        ->assertRedirect(route('rendas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Renda atualizada com sucesso.']);
 
     expect($renda->fresh()?->descricao)->toBe('Novo');
 });
@@ -367,7 +372,8 @@ it('exclui a própria renda', function () {
 
     $this->actingAs($eu)
         ->delete(route('rendas.destroy', $renda))
-        ->assertRedirect(route('rendas.index'));
+        ->assertRedirect(route('rendas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Renda excluída com sucesso.']);
 
     expect(Renda::withoutGlobalScope(DonoScope::class)->find($renda->id))->toBeNull();
 });

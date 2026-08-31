@@ -51,7 +51,8 @@ it('grava a conta no usuário autenticado', function () {
 
     $this->actingAs($eu)
         ->post(route('contas.store'), ['nome' => 'Itaú'])
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Conta criada com sucesso.']);
 
     $conta = Conta::withoutGlobalScope(DonoScope::class)->sole();
 
@@ -85,13 +86,15 @@ it('atualiza e exclui a própria conta', function () {
 
     $this->actingAs($eu)
         ->put(route('contas.update', $conta), ['nome' => 'Novo'])
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Conta atualizada com sucesso.']);
 
     expect($conta->fresh()?->nome)->toBe('Novo');
 
     $this->actingAs($eu)
         ->delete(route('contas.destroy', $conta))
-        ->assertRedirect(route('contas.index'));
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Conta excluída com sucesso.']);
 
     expect(Conta::withoutGlobalScope(DonoScope::class)->count())->toBe(0);
 });

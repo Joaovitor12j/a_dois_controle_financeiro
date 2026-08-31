@@ -1,3 +1,4 @@
+import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
@@ -49,6 +50,8 @@ export default function FormularioConta({
                         ? 'O novo nome aparece em todos os lançamentos que já apontam para esta conta.'
                         : 'Dê o nome pelo qual você reconhece essa conta no dia a dia.'}
                 </p>
+
+                <FormErrorSummary errors={errors} />
 
                 <div className="mt-6">
                     <InputLabel htmlFor="nome" value="Nome da conta" />
