@@ -33,7 +33,7 @@ class StoreFormaPagamentoRequest extends FormRequest
             'nome' => ['required', 'string', 'max:255'],
             'tipo' => ['required', Rule::enum(TipoFormaPagamento::class)],
             'saldo_inicial' => ['nullable', 'integer', 'min:0'],
-            'data_saldo_inicial' => ['required_with:saldo_inicial', 'date'],
+            'data_saldo_inicial' => ['nullable', 'required_with:saldo_inicial', 'date'],
         ];
     }
 

@@ -22,8 +22,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::resource('contas', ContaController::class)->except(['create', 'edit', 'show']);
-    Route::resource('formas-pagamento', FormaPagamentoController::class)->except(['index', 'create', 'edit', 'show']);
-    Route::resource('cartoes-credito', CartaoCreditoController::class)->except(['index', 'create', 'edit', 'show']);
+    Route::resource('formas-pagamento', FormaPagamentoController::class)
+        ->except(['index', 'create', 'edit', 'show'])
+        ->parameters(['formas-pagamento' => 'formaPagamento']);
+    Route::resource('cartoes-credito', CartaoCreditoController::class)
+        ->except(['index', 'create', 'edit', 'show'])
+        ->parameters(['cartoes-credito' => 'cartaoCredito']);
 });
 
 require __DIR__.'/auth.php';

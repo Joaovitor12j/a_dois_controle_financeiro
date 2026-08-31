@@ -1,18 +1,42 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import type { Conta } from '@/types';
+import type { Conta, FormaPagamento } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import CartaoConta from './Partials/CartaoConta';
 import ConfirmarExclusaoConta from './Partials/ConfirmarExclusaoConta';
+import ConfirmarExclusaoFormaPagamento from './Partials/ConfirmarExclusaoFormaPagamento';
 import FormularioConta from './Partials/FormularioConta';
+import FormularioFormaPagamento from './Partials/FormularioFormaPagamento';
 
 interface AlvoDeModal {
     aberto: boolean;
     conta: Conta | null;
 }
 
+interface AlvoDeFormularioFormaPagamento {
+    aberto: boolean;
+    conta: Conta | null;
+    formaPagamento: FormaPagamento | null;
+}
+
+interface AlvoDeExclusaoFormaPagamento {
+    aberto: boolean;
+    formaPagamento: FormaPagamento | null;
+}
+
 const modalFechado: AlvoDeModal = { aberto: false, conta: null };
+
+const formularioFormaPagamentoFechado: AlvoDeFormularioFormaPagamento = {
+    aberto: false,
+    conta: null,
+    formaPagamento: null,
+};
+
+const exclusaoFormaPagamentoFechada: AlvoDeExclusaoFormaPagamento = {
+    aberto: false,
+    formaPagamento: null,
+};
 
 export default function Index({ contas }: { contas: Conta[] }) {
     const usuario = usePage().props.auth.usuario!;
@@ -20,6 +44,14 @@ export default function Index({ contas }: { contas: Conta[] }) {
     const [formulario, setFormulario] = useState<AlvoDeModal>(modalFechado);
     const [exclusao, setExclusao] = useState<AlvoDeModal>(modalFechado);
     const [aberturas, setAberturas] = useState(0);
+
+    const [formularioFormaPagamento, setFormularioFormaPagamento] =
+        useState<AlvoDeFormularioFormaPagamento>(
+            formularioFormaPagamentoFechado,
+        );
+    const [exclusaoFormaPagamento, setExclusaoFormaPagamento] =
+        useState<AlvoDeExclusaoFormaPagamento>(exclusaoFormaPagamentoFechada);
+    const [aberturasFormaPagamento, setAberturasFormaPagamento] = useState(0);
 
     const abrirFormulario = (conta: Conta | null) => {
         setAberturas((quantas) => quantas + 1);
@@ -31,6 +63,20 @@ export default function Index({ contas }: { contas: Conta[] }) {
 
     const fecharExclusao = () =>
         setExclusao((atual) => ({ ...atual, aberto: false }));
+
+    const abrirFormularioFormaPagamento = (
+        conta: Conta,
+        formaPagamento: FormaPagamento | null,
+    ) => {
+        setAberturasFormaPagamento((quantas) => quantas + 1);
+        setFormularioFormaPagamento({ aberto: true, conta, formaPagamento });
+    };
+
+    const fecharFormularioFormaPagamento = () =>
+        setFormularioFormaPagamento((atual) => ({ ...atual, aberto: false }));
+
+    const fecharExclusaoFormaPagamento = () =>
+        setExclusaoFormaPagamento((atual) => ({ ...atual, aberto: false }));
 
     return (
         <AuthenticatedLayout
@@ -100,6 +146,21 @@ export default function Index({ contas }: { contas: Conta[] }) {
                                 aoExcluir={() =>
                                     setExclusao({ aberto: true, conta })
                                 }
+                                aoCriarFormaPagamento={() =>
+                                    abrirFormularioFormaPagamento(conta, null)
+                                }
+                                aoEditarFormaPagamento={(formaPagamento) =>
+                                    abrirFormularioFormaPagamento(
+                                        conta,
+                                        formaPagamento,
+                                    )
+                                }
+                                aoExcluirFormaPagamento={(formaPagamento) =>
+                                    setExclusaoFormaPagamento({
+                                        aberto: true,
+                                        formaPagamento,
+                                    })
+                                }
                             />
                         ))}
                     </div>
@@ -117,6 +178,20 @@ export default function Index({ contas }: { contas: Conta[] }) {
                 conta={exclusao.conta}
                 aberto={exclusao.aberto}
                 aoFechar={fecharExclusao}
+            />
+
+            <FormularioFormaPagamento
+                key={`${formularioFormaPagamento.formaPagamento?.id ?? formularioFormaPagamento.conta?.id ?? 'nova'}-${aberturasFormaPagamento}`}
+                contaId={formularioFormaPagamento.conta?.id ?? null}
+                formaPagamento={formularioFormaPagamento.formaPagamento}
+                aberto={formularioFormaPagamento.aberto}
+                aoFechar={fecharFormularioFormaPagamento}
+            />
+
+            <ConfirmarExclusaoFormaPagamento
+                formaPagamento={exclusaoFormaPagamento.formaPagamento}
+                aberto={exclusaoFormaPagamento.aberto}
+                aoFechar={fecharExclusaoFormaPagamento}
             />
         </AuthenticatedLayout>
     );

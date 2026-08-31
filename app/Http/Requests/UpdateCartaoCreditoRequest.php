@@ -9,10 +9,10 @@ class UpdateCartaoCreditoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('cartao_credito'));
+        return $this->user()->can('update', $this->route('cartaoCredito'));
     }
 
-    /** @return array<string, ValidationRule|array|string> */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         return [

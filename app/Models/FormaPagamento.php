@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -43,5 +44,11 @@ class FormaPagamento extends Model
     public function movimentacoes(): HasMany
     {
         return $this->hasMany(Movimentacao::class);
+    }
+
+    /** @return HasOne<Movimentacao, $this> */
+    public function saldoInicial(): HasOne
+    {
+        return $this->hasOne(Movimentacao::class)->where('is_saldo_inicial', true);
     }
 }

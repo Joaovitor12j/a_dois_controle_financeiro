@@ -12,7 +12,10 @@ final class ContaService
     /** @return Collection<int, Conta> */
     public function listar(): Collection
     {
-        return Conta::query()->orderBy('nome')->get();
+        return Conta::query()
+            ->with(['formasPagamento.saldoInicial', 'cartoesCredito'])
+            ->orderBy('nome')
+            ->get();
     }
 
     /** @param array<string, mixed> $atributos */
