@@ -36,6 +36,7 @@ export interface Conta {
     id: string;
     usuario_id: string;
     nome: string;
+    logo_url: string;
     created_at: string;
     updated_at: string;
     formas_pagamento: FormaPagamento[];

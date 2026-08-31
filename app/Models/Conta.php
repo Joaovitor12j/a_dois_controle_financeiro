@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Models\Scopes\DonoScope;
+use App\Support\LogoDev;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +24,21 @@ class Conta extends Model
         'usuario_id',
         'nome',
     ];
+
+    /** @var list<string> */
+    protected $appends = ['logo_url'];
+
+    /** @return Attribute<string, never> */
+    protected function logoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => LogoDev::getLogoUrlByName($this->nome, [
+                'size' => 96,
+                'format' => 'png',
+                'fallback' => '404',
+            ]),
+        );
+    }
 
     protected static function booted(): void
     {

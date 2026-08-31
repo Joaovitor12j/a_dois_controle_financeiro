@@ -10,6 +10,7 @@ import {
     DisclosureButton,
     DisclosurePanel,
 } from '@headlessui/react';
+import { useState } from 'react';
 
 const formatadorDeMes = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
@@ -209,6 +210,41 @@ function MenuConta({
     );
 }
 
+function AvatarConta({
+    nome,
+    logoUrl,
+    cor,
+}: {
+    nome: string;
+    logoUrl: string;
+    cor: string;
+}) {
+    const [logoFalhou, setLogoFalhou] = useState(false);
+    const inicial = nome.trim().charAt(0).toUpperCase();
+
+    if (logoFalhou) {
+        return (
+            <span
+                aria-hidden="true"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-papel"
+                style={{ backgroundColor: cor }}
+            >
+                {inicial}
+            </span>
+        );
+    }
+
+    return (
+        <img
+            src={logoUrl}
+            alt=""
+            aria-hidden="true"
+            className="h-12 w-12 shrink-0 rounded-full object-cover"
+            onError={() => setLogoFalhou(true)}
+        />
+    );
+}
+
 function LinhaFormaPagamento({
     formaPagamento,
     aoEditar,
@@ -333,7 +369,6 @@ export default function CartaoConta({
     aoEditarCartaoCredito: (cartaoCredito: CartaoCredito) => void;
     aoExcluirCartaoCredito: (cartaoCredito: CartaoCredito) => void;
 }) {
-    const inicial = conta.nome.trim().charAt(0).toUpperCase();
     const contaVazia =
         conta.formas_pagamento.length === 0 &&
         conta.cartoes_credito.length === 0;
@@ -341,13 +376,7 @@ export default function CartaoConta({
     return (
         <article className="flex flex-col self-start rounded-xl border border-tinta/10 bg-white transition duration-200 ease-out hover:-translate-y-0.5 hover:border-tinta/20 hover:shadow-lg hover:shadow-tinta/5 motion-reduce:transform-none motion-reduce:transition-none">
             <div className="flex items-start gap-4 p-5">
-                <span
-                    aria-hidden="true"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-papel"
-                    style={{ backgroundColor: cor }}
-                >
-                    {inicial}
-                </span>
+                <AvatarConta nome={conta.nome} logoUrl={conta.logo_url} cor={cor} />
 
                 <div className="min-w-0 flex-1">
                     <h2 className="truncate font-display text-xl font-semibold text-tinta">

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'logodev' => [
+        'token' => env('LOGODEV_PUBLISHABLE_KEY'),
+    ],
+
 ];
