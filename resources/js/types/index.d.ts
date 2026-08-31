@@ -43,6 +43,36 @@ export interface Conta {
     cartoes_credito: CartaoCredito[];
 }
 
+export type TipoRecorrencia = 'unica' | 'mensal';
+
+export interface ContaResumo {
+    id: string;
+    nome: string;
+}
+
+export interface CategoriaRenda {
+    id: string;
+    nome: string;
+    cor: string;
+    icone: string;
+}
+
+export interface Renda {
+    id: string;
+    usuario_id: string;
+    conta_id: string;
+    categoria_renda_id: string;
+    descricao: string;
+    valor: number;
+    tipo_recorrencia: TipoRecorrencia;
+    data_recebimento: string | null;
+    dia_recebimento: number | null;
+    data_inicio: string | null;
+    data_fim: string | null;
+    conta: ContaResumo;
+    categoria_renda: CategoriaRenda;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {

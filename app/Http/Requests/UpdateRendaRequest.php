@@ -30,17 +30,20 @@ class UpdateRendaRequest extends FormRequest
             'valor' => ['required', 'integer', 'min:1'],
             'tipo_recorrencia' => ['required', Rule::enum(TipoRecorrencia::class)],
             'data_recebimento' => [
+                'nullable',
                 'required_if:tipo_recorrencia,unica',
                 'prohibited_if:tipo_recorrencia,mensal',
                 'date',
             ],
             'dia_recebimento' => [
+                'nullable',
                 'required_if:tipo_recorrencia,mensal',
                 'prohibited_if:tipo_recorrencia,unica',
                 'integer',
                 'between:1,31',
             ],
             'data_inicio' => [
+                'nullable',
                 'required_if:tipo_recorrencia,mensal',
                 'prohibited_if:tipo_recorrencia,unica',
                 'date',

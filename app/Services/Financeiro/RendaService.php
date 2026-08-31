@@ -2,6 +2,8 @@
 
 namespace App\Services\Financeiro;
 
+use App\Models\CategoriaRenda;
+use App\Models\Conta;
 use App\Models\Renda;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,18 @@ final class RendaService
             ->with(['categoriaRenda', 'conta'])
             ->orderBy('descricao')
             ->get();
+    }
+
+    /** @return Collection<int, Conta> */
+    public function contasDisponiveis(): Collection
+    {
+        return Conta::query()->orderBy('nome')->get(['id', 'nome']);
+    }
+
+    /** @return Collection<int, CategoriaRenda> */
+    public function categoriasDisponiveis(): Collection
+    {
+        return CategoriaRenda::query()->orderBy('nome')->get();
     }
 
     /** @param array<string, mixed> $atributos */

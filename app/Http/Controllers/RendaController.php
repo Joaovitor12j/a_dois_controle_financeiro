@@ -21,6 +21,8 @@ class RendaController extends Controller
 
         return Inertia::render('Rendas/Index', [
             'rendas' => $this->rendas->listar(),
+            'contas' => $this->rendas->contasDisponiveis(),
+            'categoriasRenda' => $this->rendas->categoriasDisponiveis(),
         ]);
     }
 

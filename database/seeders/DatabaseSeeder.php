@@ -9,6 +9,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(CategoriaRendaSeeder::class);
+
         if (Usuario::query()->exists()) {
             return;
         }
