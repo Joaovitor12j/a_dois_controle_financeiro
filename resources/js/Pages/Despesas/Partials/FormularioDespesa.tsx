@@ -59,6 +59,10 @@ function paraMesInput(data: string | null): string {
     return data ? data.slice(0, 7) : '';
 }
 
+function rotuloFormaPagamento(forma: FormaPagamento): string {
+    return forma.conta ? `${forma.conta.nome} - ${forma.nome}` : forma.nome;
+}
+
 function ToggleDuplo<T extends string>({
     valor,
     opcoes,
@@ -453,7 +457,7 @@ export default function FormularioDespesa({
                                 </option>
                                 {formasPagamento.map((forma) => (
                                     <option key={forma.id} value={forma.id}>
-                                        {forma.nome}
+                                        {rotuloFormaPagamento(forma)}
                                     </option>
                                 ))}
                             </SelectInput>
@@ -596,7 +600,7 @@ export default function FormularioDespesa({
                             </option>
                             {formasPagamentoCredito.map((forma) => (
                                 <option key={forma.id} value={forma.id}>
-                                    {forma.nome}
+                                    {rotuloFormaPagamento(forma)}
                                 </option>
                             ))}
                         </SelectInput>

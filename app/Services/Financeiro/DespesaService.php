@@ -25,10 +25,14 @@ final class DespesaService
         return CategoriaDespesa::query()->orderBy('nome')->get();
     }
 
-    /** @return Collection<int, FormaPagamento> */
-    public function formasPagamentoDisponiveis(): Collection
+    /** @return \Illuminate\Support\Collection */
+    public function formasPagamentoDisponiveis(): \Illuminate\Support\Collection
     {
-        return FormaPagamento::query()->with('cartaoCredito')->orderBy('nome')->get();
+        return FormaPagamento::query()
+            ->with(['cartaoCredito', 'conta:id,nome'])
+            ->get()
+            ->sortBy(fn (FormaPagamento $forma) => "{$forma->conta->nome} $forma->nome")
+            ->values();
     }
 
     /** @param array<string, mixed> $atributos */

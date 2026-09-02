@@ -28,6 +28,7 @@ export interface FormaPagamento {
     tipo: TipoFormaPagamento;
     saldo_inicial: Movimentacao | null;
     cartao_credito: CartaoCredito | null;
+    conta?: { id: string; nome: string };
 }
 
 export interface Conta {
