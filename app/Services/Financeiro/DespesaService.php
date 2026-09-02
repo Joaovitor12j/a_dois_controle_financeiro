@@ -2,10 +2,13 @@
 
 namespace App\Services\Financeiro;
 
+use App\Domain\ValueObjects\Competencia;
 use App\Models\CategoriaDespesa;
 use App\Models\Despesa;
 use App\Models\FormaPagamento;
+use App\Models\Movimentacao;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 
 final class DespesaService
@@ -25,7 +28,8 @@ final class DespesaService
         return CategoriaDespesa::query()->orderBy('nome')->get();
     }
 
-    public function formasPagamentoDisponiveis(): \Illuminate\Support\Collection
+    /** @return SupportCollection<int, FormaPagamento> */
+    public function formasPagamentoDisponiveis(): SupportCollection
     {
         return FormaPagamento::query()
             ->with(['cartaoCredito', 'conta:id,nome'])
@@ -56,25 +60,30 @@ final class DespesaService
         $despesa->delete();
     }
 
-    public function marcarComoPaga(Despesa $despesa, string $formaPagamentoId, string $dataPagamento): Despesa
+    public function estaPagaNaCompetencia(Despesa $despesa, Competencia $competencia): bool
     {
-        $despesa->update([
-            'paga' => true,
-            'forma_pagamento_id' => $formaPagamentoId,
-            'data_pagamento' => $dataPagamento,
-        ]);
-
-        return $despesa;
+        return $despesa->movimentacoes()->where('competencia', $competencia->paraData())->exists();
     }
 
-    public function desfazerPagamento(Despesa $despesa): Despesa
-    {
-        $despesa->update([
-            'paga' => false,
-            'forma_pagamento_id' => null,
-            'data_pagamento' => null,
-        ]);
+    public function marcarComoPaga(
+        Despesa $despesa,
+        Competencia $competencia,
+        ?string $formaPagamentoId,
+        string $dataPagamento,
+    ): Movimentacao {
+        $formaPagamentoId = $despesa->ehParcelada() ? $despesa->forma_pagamento_id : $formaPagamentoId;
 
-        return $despesa;
+        return Movimentacao::create([
+            'forma_pagamento_id' => $formaPagamentoId,
+            'valor' => $despesa->valor->negated(),
+            'data' => $dataPagamento,
+            'despesa_id' => $despesa->id,
+            'competencia' => $competencia->paraData(),
+        ]);
+    }
+
+    public function desfazerPagamento(Despesa $despesa, Competencia $competencia): void
+    {
+        $despesa->movimentacoes()->where('competencia', $competencia->paraData())->delete();
     }
 }

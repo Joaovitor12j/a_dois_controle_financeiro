@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\ValueObjects\Competencia;
 use App\Http\Requests\DesfazerPagamentoDespesaRequest;
 use App\Http\Requests\MarcarComoPagaDespesaRequest;
 use App\Http\Requests\StoreDespesaRequest;
@@ -67,6 +68,7 @@ class DespesaController extends Controller
 
         $this->despesas->marcarComoPaga(
             $despesa,
+            Competencia::deString($request->validated('competencia')),
             $request->validated('forma_pagamento_id'),
             $request->validated('data_pagamento'),
         );
@@ -80,7 +82,7 @@ class DespesaController extends Controller
     {
         $this->authorize('update', $despesa);
 
-        $this->despesas->desfazerPagamento($despesa);
+        $this->despesas->desfazerPagamento($despesa, Competencia::deString($request->validated('competencia')));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pagamento desfeito.']);
 

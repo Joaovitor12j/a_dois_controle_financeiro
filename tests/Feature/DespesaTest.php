@@ -1,12 +1,15 @@
 <?php
 
+use App\Domain\ValueObjects\Competencia;
 use App\Domain\ValueObjects\Money;
 use App\Enums\ContextoDespesa;
 use App\Enums\TipoLancamentoDespesa;
+use App\Models\CartaoCredito;
 use App\Models\CategoriaDespesa;
 use App\Models\Conta;
 use App\Models\Despesa;
 use App\Models\FormaPagamento;
+use App\Models\Movimentacao;
 use App\Models\Scopes\DespesaScope;
 use App\Models\Scopes\DonoScope;
 use App\Models\Usuario;
@@ -60,6 +63,73 @@ function formaPagamentoDespesa(Conta $conta, string $tipo = 'debito', string $no
     return FormaPagamento::create(['conta_id' => $conta->id, 'nome' => $nome, 'tipo' => $tipo]);
 }
 
+function cartaoCreditoDespesa(FormaPagamento $formaPagamento, int $diaFechamento = 20): CartaoCredito
+{
+    return CartaoCredito::create([
+        'forma_pagamento_id' => $formaPagamento->id,
+        'limite_total' => Money::fromCents(500000),
+        'limite_usado_abertura' => Money::zero(),
+        'dia_fechamento' => $diaFechamento,
+        'dia_vencimento' => $diaFechamento >= 21 ? $diaFechamento - 21 : $diaFechamento + 7,
+    ]);
+}
+
+/** @param array<string, mixed> $overrides */
+function criarDespesaUnica(Usuario $usuario, CategoriaDespesa $categoria, array $overrides = []): Despesa
+{
+    return Despesa::withoutGlobalScope(DespesaScope::class)->create(array_merge([
+        'usuario_id' => $usuario->id,
+        'contexto' => 'individual',
+        'categoria_despesa_id' => $categoria->id,
+        'descricao' => 'Mercado',
+        'valor' => 10000,
+        'tipo_lancamento' => 'unica',
+        'data_vencimento' => '2026-08-01',
+    ], $overrides));
+}
+
+/** @param array<string, mixed> $overrides */
+function criarDespesaMensal(Usuario $usuario, CategoriaDespesa $categoria, array $overrides = []): Despesa
+{
+    return Despesa::withoutGlobalScope(DespesaScope::class)->create(array_merge([
+        'usuario_id' => $usuario->id,
+        'contexto' => 'individual',
+        'categoria_despesa_id' => $categoria->id,
+        'descricao' => 'Aluguel',
+        'valor' => 100000,
+        'tipo_lancamento' => 'mensal',
+        'dia_vencimento' => 10,
+        'data_inicio' => '2026-01-01',
+    ], $overrides));
+}
+
+/** @param array<string, mixed> $overrides */
+function criarDespesaParcelada(Usuario $usuario, CategoriaDespesa $categoria, FormaPagamento $cartao, array $overrides = []): Despesa
+{
+    return Despesa::withoutGlobalScope(DespesaScope::class)->create(array_merge([
+        'usuario_id' => $usuario->id,
+        'contexto' => 'individual',
+        'categoria_despesa_id' => $categoria->id,
+        'descricao' => 'Geladeira',
+        'valor' => 50000,
+        'tipo_lancamento' => 'parcelada',
+        'forma_pagamento_id' => $cartao->id,
+        'numero_parcelas' => 10,
+        'data_primeira_parcela' => '2026-09-01',
+    ], $overrides));
+}
+
+function criarMovimentacaoDespesa(Despesa $despesa, FormaPagamento $forma, string $competencia, string $data = '2026-08-05'): Movimentacao
+{
+    return Movimentacao::create([
+        'forma_pagamento_id' => $forma->id,
+        'valor' => $despesa->valor->negated(),
+        'data' => $data,
+        'despesa_id' => $despesa->id,
+        'competencia' => $competencia,
+    ]);
+}
+
 /**
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
@@ -73,7 +143,6 @@ function payloadDespesaUnica(CategoriaDespesa $categoria, array $overrides = [])
         'valor' => 15000,
         'tipo_lancamento' => 'unica',
         'data_vencimento' => '2026-08-10',
-        'paga' => false,
     ], $overrides);
 }
 
@@ -140,11 +209,27 @@ it('faz cast de valor, tipo_lancamento e contexto', function () {
 
 it('relações belongsTo retornam os models corretos', function () {
     $contexto = novoContextoDespesa();
-    $despesa = despesaValida($contexto, ['forma_pagamento_id' => $contexto->formaPagamento->id]);
+    $despesa = despesaValida($contexto, [
+        'descricao' => 'Geladeira',
+        'tipo_lancamento' => TipoLancamentoDespesa::Parcelada,
+        'data_vencimento' => null,
+        'forma_pagamento_id' => $contexto->cartaoCredito->id,
+        'numero_parcelas' => 5,
+        'data_primeira_parcela' => '2026-09-01',
+    ]);
 
     expect($despesa->usuario->is($contexto->usuario))->toBeTrue()
-        ->and($despesa->formaPagamento->is($contexto->formaPagamento))->toBeTrue()
+        ->and($despesa->formaPagamento->is($contexto->cartaoCredito))->toBeTrue()
         ->and($despesa->categoriaDespesa->is($contexto->categoria))->toBeTrue();
+});
+
+it('relação hasMany movimentacoes retorna as movimentações da despesa', function () {
+    $contexto = novoContextoDespesa();
+    $despesa = despesaValida($contexto);
+
+    $movimentacao = criarMovimentacaoDespesa($despesa, $contexto->formaPagamento, '2026-08');
+
+    expect($despesa->movimentacoes->pluck('id')->all())->toBe([$movimentacao->id]);
 });
 
 it('ehUnica, ehMensal, ehParcelada e ehConjunta refletem os campos', function () {
@@ -280,54 +365,6 @@ it('constraint: despesa parcelada com dia_vencimento, data_inicio ou data_fim pr
     'data_fim' => [['data_fim' => '2026-12-31']],
 ]);
 
-// Constraints: despesas_pagamento_check (corrigida)
-
-it('constraint: despesa única não paga com data_pagamento preenchida lança erro', function () {
-    $contexto = novoContextoDespesa();
-
-    expect(fn () => despesaValida($contexto, [
-        'paga' => false,
-        'data_pagamento' => '2026-08-10',
-    ]))->toThrow(QueryException::class);
-});
-
-it('constraint: despesa única paga sem data_pagamento ou sem forma_pagamento_id lança erro', function (array $sobrescritas) {
-    $contexto = novoContextoDespesa();
-
-    expect(fn () => despesaValida($contexto, array_merge([
-        'paga' => true,
-        'data_pagamento' => '2026-08-10',
-        'forma_pagamento_id' => $contexto->formaPagamento->id,
-    ], $sobrescritas)))->toThrow(QueryException::class);
-})->with([
-    'sem data_pagamento' => [['data_pagamento' => null]],
-    'sem forma_pagamento_id' => [['forma_pagamento_id' => null]],
-]);
-
-it('constraint corrigida: despesa única não paga aceita forma_pagamento_id informada com antecedência', function () {
-    $contexto = novoContextoDespesa();
-
-    $despesa = despesaValida($contexto, [
-        'paga' => false,
-        'forma_pagamento_id' => $contexto->formaPagamento->id,
-    ]);
-
-    expect($despesa->fresh()?->forma_pagamento_id)->toBe($contexto->formaPagamento->id)
-        ->and($despesa->fresh()?->paga)->toBeFalse();
-});
-
-it('constraint: despesa única paga com data_pagamento e forma_pagamento_id preenchidos é aceita', function () {
-    $contexto = novoContextoDespesa();
-
-    $despesa = despesaValida($contexto, [
-        'paga' => true,
-        'data_pagamento' => '2026-08-10',
-        'forma_pagamento_id' => $contexto->formaPagamento->id,
-    ]);
-
-    expect($despesa->fresh()?->paga)->toBeTrue();
-});
-
 // DespesaScope
 
 it('escopo: despesa individual só aparece pro dono', function () {
@@ -335,14 +372,8 @@ it('escopo: despesa individual só aparece pro dono', function () {
     $parceiro = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
 
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Minha', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-10', 'paga' => false,
-    ]);
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $parceiro->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Do parceiro', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-10', 'paga' => false,
-    ]);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Minha']);
+    criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Do parceiro']);
 
     Auth::login($eu);
 
@@ -354,10 +385,7 @@ it('escopo: despesa conjunta aparece pros dois usuários', function () {
     $parceiro = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
 
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'conjunta', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Conjunta', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-10', 'paga' => false,
-    ]);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta']);
 
     Auth::login($eu);
     expect(Despesa::query()->count())->toBe(1);
@@ -370,10 +398,7 @@ it('escopo: sem usuário autenticado nenhuma despesa é retornada', function () 
     $eu = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
 
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'conjunta', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Conjunta', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-10', 'paga' => false,
-    ]);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta']);
 
     Auth::logout();
 
@@ -414,8 +439,7 @@ it('cria despesa com sucesso quando o lançamento é mensal', function () {
 
     expect($despesa->tipo_lancamento)->toBe(TipoLancamentoDespesa::Mensal)
         ->and($despesa->dia_vencimento)->toBe(10)
-        ->and($despesa->getRawOriginal('data_inicio'))->toBe('2026-01-01')
-        ->and($despesa->paga)->toBeFalse();
+        ->and($despesa->getRawOriginal('data_inicio'))->toBe('2026-01-01');
 });
 
 it('cria despesa com sucesso quando o lançamento é parcelada', function () {
@@ -434,26 +458,6 @@ it('cria despesa com sucesso quando o lançamento é parcelada', function () {
     expect($despesa->tipo_lancamento)->toBe(TipoLancamentoDespesa::Parcelada)
         ->and($despesa->forma_pagamento_id)->toBe($cartao->id)
         ->and($despesa->numero_parcelas)->toBe(10);
-});
-
-it('cria despesa já paga inline quando o lançamento é único', function () {
-    $eu = Usuario::factory()->create();
-    $conta = contaDoUsuarioDespesa($eu);
-    $categoria = categoriaDespesaDeTeste();
-    $forma = formaPagamentoDespesa($conta);
-
-    $this->actingAs($eu)
-        ->post(route('despesas.store'), payloadDespesaUnica($categoria, [
-            'paga' => true,
-            'data_pagamento' => '2026-08-10',
-            'forma_pagamento_id' => $forma->id,
-        ]))
-        ->assertRedirect(route('despesas.index'));
-
-    $despesa = Despesa::sole();
-
-    expect($despesa->paga)->toBeTrue()
-        ->and($despesa->forma_pagamento_id)->toBe($forma->id);
 });
 
 it('falha ao criar despesa única sem data_vencimento', function () {
@@ -503,18 +507,22 @@ it('falha ao criar despesa mensal com data_fim anterior a data_inicio', function
     expect(Despesa::count())->toBe(0);
 });
 
-it('falha ao criar despesa mensal com forma_pagamento_id preenchida', function () {
+it('falha ao criar despesa única ou mensal com forma_pagamento_id preenchida', function (string $tipo) {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $forma = formaPagamentoDespesa($conta);
 
+    $payload = $tipo === 'unica'
+        ? payloadDespesaUnica($categoria, ['forma_pagamento_id' => $forma->id])
+        : payloadDespesaMensal($categoria, ['forma_pagamento_id' => $forma->id]);
+
     $this->actingAs($eu)
-        ->post(route('despesas.store'), payloadDespesaMensal($categoria, ['forma_pagamento_id' => $forma->id]))
+        ->post(route('despesas.store'), $payload)
         ->assertSessionHasErrors('forma_pagamento_id');
 
     expect(Despesa::count())->toBe(0);
-});
+})->with(['unica', 'mensal']);
 
 it('falha ao criar despesa parcelada sem forma_pagamento_id, numero_parcelas ou data_primeira_parcela', function (string $campo) {
     $eu = Usuario::factory()->create();
@@ -569,13 +577,10 @@ it('falha ao criar despesa com categoria_despesa_id inexistente', function () {
 
 // Controller: update
 
-it('atualiza a própria despesa única sem alterar pagamento', function () {
+it('atualiza a própria despesa única', function () {
     $eu = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Antigo', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['descricao' => 'Antigo']);
 
     $this->actingAs($eu)
         ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaUnica($categoria, ['descricao' => 'Novo'])))
@@ -588,10 +593,7 @@ it('atualiza a própria despesa única sem alterar pagamento', function () {
 it('rejeita tipo_lancamento no payload de atualização', function () {
     $eu = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Antigo', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['descricao' => 'Antigo']);
 
     $this->actingAs($eu)
         ->put(route('despesas.update', $despesa), payloadDespesaUnica($categoria, ['tipo_lancamento' => 'mensal']))
@@ -600,36 +602,12 @@ it('rejeita tipo_lancamento no payload de atualização', function () {
     expect($despesa->fresh()?->tipo_lancamento)->toBe(TipoLancamentoDespesa::Unica);
 });
 
-it('ignora paga e data_pagamento enviados no update geral (não fazem parte do payload)', function () {
-    $eu = Usuario::factory()->create();
-    $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Antigo', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
-
-    $this->actingAs($eu)
-        ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaUnica($categoria, [
-            'paga' => true,
-            'data_pagamento' => '2026-08-10',
-        ])))
-        ->assertRedirect(route('despesas.index'));
-
-    $despesa->refresh();
-
-    expect($despesa->paga)->toBeFalse()
-        ->and($despesa->data_pagamento)->toBeNull();
-});
-
 it('rejeita forma_pagamento_id no update geral de despesa única', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $forma = formaPagamentoDespesa($conta);
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Antigo', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['descricao' => 'Antigo']);
 
     $this->actingAs($eu)
         ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaUnica($categoria, ['forma_pagamento_id' => $forma->id])))
@@ -642,11 +620,7 @@ it('aceita trocar forma_pagamento_id no update geral de despesa parcelada', func
     $categoria = categoriaDespesaDeTeste();
     $cartaoAntigo = formaPagamentoDespesa($conta, 'credito', 'Cartão antigo');
     $cartaoNovo = formaPagamentoDespesa($conta, 'credito', 'Cartão novo');
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Geladeira', 'valor' => 50000, 'tipo_lancamento' => 'parcelada',
-        'forma_pagamento_id' => $cartaoAntigo->id, 'numero_parcelas' => 10, 'data_primeira_parcela' => '2026-09-01',
-    ]);
+    $despesa = criarDespesaParcelada($eu, $categoria, $cartaoAntigo);
 
     $this->actingAs($eu)
         ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaParcelada($categoria, $cartaoNovo)))
@@ -664,25 +638,54 @@ it('rejeita trocar forma_pagamento_id no update de despesa parcelada por forma d
     $categoria = categoriaDespesaDeTeste();
     $cartaoProprio = formaPagamentoDespesa($conta, 'credito', 'Cartão próprio');
     $cartaoDoParceiro = formaPagamentoDespesa($contaParceiro, 'credito', 'Cartão do parceiro');
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Geladeira', 'valor' => 50000, 'tipo_lancamento' => 'parcelada',
-        'forma_pagamento_id' => $cartaoProprio->id, 'numero_parcelas' => 10, 'data_primeira_parcela' => '2026-09-01',
-    ]);
+    $despesa = criarDespesaParcelada($eu, $categoria, $cartaoProprio);
 
     $this->actingAs($eu)
         ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaParcelada($categoria, $cartaoDoParceiro)))
         ->assertSessionHasErrors('forma_pagamento_id');
 });
 
+it('bloqueia encerrar despesa mensal antes de uma competência já paga', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+    $despesa = criarDespesaMensal($eu, $categoria);
+
+    criarMovimentacaoDespesa($despesa, $forma, '2026-06');
+
+    $this->actingAs($eu)
+        ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaMensal($categoria, [
+            'data_fim' => '2026-05-01',
+        ])))
+        ->assertSessionHasErrors('data_fim');
+
+    expect($despesa->fresh()?->data_fim)->toBeNull();
+});
+
+it('permite encerrar despesa mensal depois da última competência paga', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+    $despesa = criarDespesaMensal($eu, $categoria);
+
+    criarMovimentacaoDespesa($despesa, $forma, '2026-06');
+
+    $this->actingAs($eu)
+        ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaMensal($categoria, [
+            'data_fim' => '2026-07-01',
+        ])))
+        ->assertRedirect(route('despesas.index'));
+
+    expect($despesa->fresh()?->getRawOriginal('data_fim'))->toBe('2026-07-01');
+});
+
 it('não alcança a despesa individual do parceiro', function (string $metodo, string $rota) {
     $eu = Usuario::factory()->create();
     $parceiro = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $parceiro->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Do parceiro', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Do parceiro']);
 
     $this->actingAs($eu)
         ->{$metodo}(route($rota, $despesa), payloadDespesaUnica($categoria))
@@ -700,10 +703,7 @@ it('parceiro edita e exclui despesa conjunta', function () {
     $eu = Usuario::factory()->create();
     $parceiro = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'conjunta', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Conjunta', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta']);
 
     $this->actingAs($parceiro)
         ->put(route('despesas.update', $despesa), payloadAtualizacaoDespesa(payloadDespesaUnica($categoria, [
@@ -724,10 +724,7 @@ it('parceiro edita e exclui despesa conjunta', function () {
 it('exclui a própria despesa', function () {
     $eu = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Mercado', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria);
 
     $this->actingAs($eu)
         ->delete(route('despesas.destroy', $despesa))
@@ -737,29 +734,18 @@ it('exclui a própria despesa', function () {
     expect(Despesa::withoutGlobalScope(DespesaScope::class)->find($despesa->id))->toBeNull();
 });
 
-// index() ainda não tem view TSX (frontend fora do escopo desta parte) — a listagem em si já é
-// coberta pelos testes de DespesaScope acima; aqui testamos DespesaService::listar diretamente.
 it('DespesaService::listar retorna despesas visíveis ao usuário autenticado (individual própria + conjuntas)', function () {
     $eu = Usuario::factory()->create();
     $parceiro = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
 
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Minha', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $parceiro->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Do parceiro', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
-    Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $parceiro->id, 'contexto' => 'conjunta', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Conjunta', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Minha']);
+    criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Do parceiro']);
+    criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta']);
 
     Auth::login($eu);
 
-    $resultado = (new DespesaService)->listar();
+    $resultado = app(DespesaService::class)->listar();
 
     expect($resultado)->toHaveCount(2)
         ->and($resultado->pluck('descricao')->sort()->values()->all())->toBe(['Conjunta', 'Minha']);
@@ -771,90 +757,125 @@ it('exige autenticação nas rotas de despesa', function () {
 
 // Controller: marcarComoPaga
 
-it('marca despesa única não paga como paga', function () {
+it('marca despesa única como paga na sua competência', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $forma = formaPagamentoDespesa($conta);
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Mercado', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['data_vencimento' => '2026-08-10']);
 
     $this->actingAs($eu)
         ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-08',
             'forma_pagamento_id' => $forma->id,
             'data_pagamento' => '2026-08-05',
         ])
         ->assertRedirect(route('despesas.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Despesa marcada como paga.']);
 
-    $despesa->refresh();
+    $movimentacao = Movimentacao::sole();
 
-    expect($despesa->paga)->toBeTrue()
-        ->and($despesa->forma_pagamento_id)->toBe($forma->id)
-        ->and($despesa->getRawOriginal('data_pagamento'))->toBe('2026-08-05');
+    expect($movimentacao->despesa_id)->toBe($despesa->id)
+        ->and($movimentacao->forma_pagamento_id)->toBe($forma->id)
+        ->and((string) $movimentacao->competencia)->toBe('2026-08')
+        ->and($movimentacao->valor)->toEqual($despesa->valor->negated())
+        ->and($movimentacao->getRawOriginal('data'))->toBe('2026-08-05');
 });
 
-it('rejeita marcar como paga despesa mensal', function () {
+it('marca despesa mensal como paga numa competência do período', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $forma = formaPagamentoDespesa($conta);
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Aluguel', 'valor' => 100000, 'tipo_lancamento' => 'mensal',
-        'dia_vencimento' => 10, 'data_inicio' => '2026-01-01',
-    ]);
+    $despesa = criarDespesaMensal($eu, $categoria);
 
     $this->actingAs($eu)
         ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-03',
             'forma_pagamento_id' => $forma->id,
-            'data_pagamento' => '2026-08-05',
+            'data_pagamento' => '2026-03-10',
         ])
-        ->assertSessionHasErrors('tipo_lancamento');
+        ->assertRedirect(route('despesas.index'));
 
-    expect($despesa->fresh()?->paga)->toBeFalse();
+    expect(Movimentacao::sole()->despesa_id)->toBe($despesa->id);
 });
 
-it('rejeita marcar como paga despesa parcelada', function () {
+it('marca despesa parcelada como paga sem pedir forma_pagamento_id, usando a do cartão da compra', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $cartao = formaPagamentoDespesa($conta, 'credito', 'Cartão');
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Geladeira', 'valor' => 50000, 'tipo_lancamento' => 'parcelada',
-        'forma_pagamento_id' => $cartao->id, 'numero_parcelas' => 10, 'data_primeira_parcela' => '2026-09-01',
-    ]);
+    cartaoCreditoDespesa($cartao, 20);
+    $despesa = criarDespesaParcelada($eu, $categoria, $cartao, ['data_primeira_parcela' => '2026-09-01']);
 
     $this->actingAs($eu)
         ->patch(route('despesas.marcar-como-paga', $despesa), [
-            'forma_pagamento_id' => $cartao->id,
-            'data_pagamento' => '2026-08-05',
+            'competencia' => '2026-09',
+            'data_pagamento' => '2026-09-15',
         ])
-        ->assertSessionHasErrors('tipo_lancamento');
+        ->assertRedirect(route('despesas.index'));
 
-    expect($despesa->fresh()?->paga)->toBeFalse();
+    $movimentacao = Movimentacao::sole();
+
+    expect($movimentacao->forma_pagamento_id)->toBe($cartao->id)
+        ->and((string) $movimentacao->competencia)->toBe('2026-09');
 });
 
-it('rejeita marcar como paga despesa já paga', function () {
+it('rejeita enviar forma_pagamento_id ao marcar despesa parcelada como paga', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $cartao = formaPagamentoDespesa($conta, 'credito', 'Cartão');
+    cartaoCreditoDespesa($cartao, 20);
+    $despesa = criarDespesaParcelada($eu, $categoria, $cartao, ['data_primeira_parcela' => '2026-09-01']);
+
+    $this->actingAs($eu)
+        ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-09',
+            'forma_pagamento_id' => $cartao->id,
+            'data_pagamento' => '2026-09-15',
+        ])
+        ->assertSessionHasErrors('forma_pagamento_id');
+
+    expect(Movimentacao::count())->toBe(0);
+});
+
+it('rejeita marcar como paga competência sem ocorrência da despesa', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $forma = formaPagamentoDespesa($conta);
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Mercado', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01',
-        'paga' => true, 'forma_pagamento_id' => $forma->id, 'data_pagamento' => '2026-08-02',
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['data_vencimento' => '2026-08-10']);
 
     $this->actingAs($eu)
         ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-09',
             'forma_pagamento_id' => $forma->id,
-            'data_pagamento' => '2026-08-05',
+            'data_pagamento' => '2026-09-05',
         ])
-        ->assertSessionHasErrors('paga');
+        ->assertSessionHasErrors('competencia');
+
+    expect(Movimentacao::count())->toBe(0);
+});
+
+it('rejeita marcar como paga uma competência já paga', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+    $despesa = criarDespesaMensal($eu, $categoria);
+
+    criarMovimentacaoDespesa($despesa, $forma, '2026-03');
+
+    $this->actingAs($eu)
+        ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-03',
+            'forma_pagamento_id' => $forma->id,
+            'data_pagamento' => '2026-03-10',
+        ])
+        ->assertSessionHasErrors('competencia');
+
+    expect(Movimentacao::count())->toBe(1);
 });
 
 it('rejeita marcar como paga com forma_pagamento_id de conta do parceiro', function () {
@@ -863,71 +884,65 @@ it('rejeita marcar como paga com forma_pagamento_id de conta do parceiro', funct
     $contaParceiro = contaDoUsuarioDespesa($parceiro);
     $categoria = categoriaDespesaDeTeste();
     $formaDoParceiro = formaPagamentoDespesa($contaParceiro, 'debito', 'Débito do parceiro');
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Mercado', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaUnica($eu, $categoria, ['data_vencimento' => '2026-08-10']);
 
     $this->actingAs($eu)
         ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-08',
             'forma_pagamento_id' => $formaDoParceiro->id,
             'data_pagamento' => '2026-08-05',
         ])
         ->assertSessionHasErrors('forma_pagamento_id');
 
-    expect($despesa->fresh()?->paga)->toBeFalse();
+    expect(Movimentacao::count())->toBe(0);
 });
 
 // Controller: desfazerPagamento
 
-it('desfaz pagamento de despesa única paga', function () {
+it('desfaz pagamento de uma competência paga', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
     $forma = formaPagamentoDespesa($conta);
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Mercado', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01',
-        'paga' => true, 'forma_pagamento_id' => $forma->id, 'data_pagamento' => '2026-08-02',
-    ]);
+    $despesa = criarDespesaMensal($eu, $categoria);
+
+    criarMovimentacaoDespesa($despesa, $forma, '2026-03');
 
     $this->actingAs($eu)
-        ->patch(route('despesas.desfazer-pagamento', $despesa))
+        ->patch(route('despesas.desfazer-pagamento', $despesa), ['competencia' => '2026-03'])
         ->assertRedirect(route('despesas.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Pagamento desfeito.']);
 
-    $despesa->refresh();
-
-    expect($despesa->paga)->toBeFalse()
-        ->and($despesa->forma_pagamento_id)->toBeNull()
-        ->and($despesa->data_pagamento)->toBeNull();
+    expect(Movimentacao::count())->toBe(0);
 });
 
-it('rejeita desfazer pagamento de despesa não paga', function () {
+it('rejeita desfazer pagamento de competência não paga', function () {
     $eu = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Mercado', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $despesa = criarDespesaMensal($eu, $categoria);
 
     $this->actingAs($eu)
-        ->patch(route('despesas.desfazer-pagamento', $despesa))
-        ->assertSessionHasErrors('paga');
+        ->patch(route('despesas.desfazer-pagamento', $despesa), ['competencia' => '2026-03'])
+        ->assertSessionHasErrors('competencia');
 });
 
-it('rejeita desfazer pagamento de despesa mensal', function () {
-    $eu = Usuario::factory()->create();
-    $categoria = categoriaDespesaDeTeste();
-    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $eu->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Aluguel', 'valor' => 100000, 'tipo_lancamento' => 'mensal',
-        'dia_vencimento' => 10, 'data_inicio' => '2026-01-01',
-    ]);
+// Service
 
-    $this->actingAs($eu)
-        ->patch(route('despesas.desfazer-pagamento', $despesa))
-        ->assertSessionHasErrors('tipo_lancamento');
+it('DespesaService::estaPagaNaCompetencia reflete a existência da movimentação', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+    $despesa = criarDespesaMensal($eu, $categoria);
+
+    $competencia = Competencia::deString('2026-03');
+    $service = app(DespesaService::class);
+
+    expect($service->estaPagaNaCompetencia($despesa, $competencia))->toBeFalse();
+
+    criarMovimentacaoDespesa($despesa, $forma, '2026-03');
+
+    expect($service->estaPagaNaCompetencia($despesa, $competencia))->toBeTrue();
 });
 
 // Policy
@@ -937,15 +952,8 @@ it('nega a policy sobre despesa individual do parceiro e permite sobre despesa c
     $parceiro = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();
 
-    $individualDoParceiro = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $parceiro->id, 'contexto' => 'individual', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Do parceiro', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
-
-    $conjunta = Despesa::withoutGlobalScope(DespesaScope::class)->create([
-        'usuario_id' => $parceiro->id, 'contexto' => 'conjunta', 'categoria_despesa_id' => $categoria->id,
-        'descricao' => 'Conjunta', 'valor' => 10000, 'tipo_lancamento' => 'unica', 'data_vencimento' => '2026-08-01', 'paga' => false,
-    ]);
+    $individualDoParceiro = criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Do parceiro']);
+    $conjunta = criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta']);
 
     expect($eu->can('view', $individualDoParceiro))->toBeFalse()
         ->and($eu->can('update', $individualDoParceiro))->toBeFalse()

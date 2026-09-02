@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\ValueObjects\Competencia;
 use App\Models\Despesa;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,21 +18,24 @@ class DesfazerPagamentoDespesaRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
-        return [];
+        return [
+            'competencia' => ['required', 'date_format:Y-m'],
+        ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            /** @var Despesa $despesa */
-            $despesa = $this->route('despesa');
-
-            if (! $despesa->ehUnica()) {
-                $validator->errors()->add('tipo_lancamento', 'Só despesa única tem pagamento a desfazer.');
+            if ($validator->errors()->has('competencia')) {
+                return;
             }
 
-            if (! $despesa->paga) {
-                $validator->errors()->add('paga', 'Despesa não está paga.');
+            /** @var Despesa $despesa */
+            $despesa = $this->route('despesa');
+            $competencia = Competencia::deString($this->input('competencia'));
+
+            if (! $despesa->movimentacoes()->where('competencia', $competencia->paraData())->exists()) {
+                $validator->errors()->add('competencia', 'Essa competência não está paga.');
             }
         });
     }

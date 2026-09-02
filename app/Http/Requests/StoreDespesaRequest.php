@@ -30,27 +30,12 @@ class StoreDespesaRequest extends FormRequest
                 'prohibited_unless:tipo_lancamento,unica',
                 'date',
             ],
-            'paga' => [
-                'nullable',
-                'required_if:tipo_lancamento,unica',
-                'prohibited_unless:tipo_lancamento,unica',
-                'boolean',
-            ],
-            'data_pagamento' => [
-                'nullable',
-                Rule::requiredIf(fn () => $this->boolean('paga')),
-                Rule::prohibitedIf(fn () => $this->input('tipo_lancamento') !== TipoLancamentoDespesa::Unica->value
-                    || ! $this->boolean('paga')),
-                'date',
-            ],
             'forma_pagamento_id' => [
                 'nullable',
                 'uuid',
                 Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),
-                'prohibited_if:tipo_lancamento,mensal',
+                'prohibited_unless:tipo_lancamento,parcelada',
                 'required_if:tipo_lancamento,parcelada',
-                Rule::requiredIf(fn () => $this->input('tipo_lancamento') === TipoLancamentoDespesa::Unica->value
-                    && $this->boolean('paga')),
             ],
 
             'dia_vencimento' => [

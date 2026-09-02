@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Financeiro\CalculadoraCompetenciaDespesa;
+use App\Domain\ValueObjects\Competencia;
 use App\Models\Despesa;
 use App\Models\FormaPagamento;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -11,6 +13,11 @@ use Illuminate\Validation\Validator;
 
 class MarcarComoPagaDespesaRequest extends FormRequest
 {
+    public function __construct(private readonly CalculadoraCompetenciaDespesa $calculadora)
+    {
+        parent::__construct();
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -19,8 +26,16 @@ class MarcarComoPagaDespesaRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
+        /** @var Despesa $despesa */
+        $despesa = $this->route('despesa');
+
         return [
-            'forma_pagamento_id' => ['required', 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at')],
+            'competencia' => ['required', 'date_format:Y-m'],
+            'forma_pagamento_id' => [
+                Rule::prohibitedIf(fn () => $despesa->ehParcelada()),
+                Rule::requiredIf(fn () => ! $despesa->ehParcelada()),
+                'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),
+            ],
             'data_pagamento' => ['required', 'date'],
         ];
     }
@@ -31,20 +46,35 @@ class MarcarComoPagaDespesaRequest extends FormRequest
             /** @var Despesa $despesa */
             $despesa = $this->route('despesa');
 
-            if (! $despesa->ehUnica()) {
-                $validator->errors()->add('tipo_lancamento', 'Só despesa única pode ser marcada como paga.');
+            if (! $validator->errors()->has('competencia')) {
+                $this->validarCompetencia($validator, $despesa);
             }
 
-            if ($despesa->paga) {
-                $validator->errors()->add('paga', 'Despesa já está marcada como paga.');
-            }
-
-            $this->validarFormaPagamento($validator);
+            $this->validarFormaPagamento($validator, $despesa);
         });
     }
 
-    protected function validarFormaPagamento(Validator $validator): void
+    protected function validarCompetencia(Validator $validator, Despesa $despesa): void
     {
+        $competencia = Competencia::deString($this->input('competencia'));
+
+        if (! $this->calculadora->existeNaCompetencia($despesa, $competencia)) {
+            $validator->errors()->add('competencia', 'Essa despesa não tem ocorrência nessa competência.');
+
+            return;
+        }
+
+        if ($despesa->movimentacoes()->where('competencia', $competencia->paraData())->exists()) {
+            $validator->errors()->add('competencia', 'Essa competência já está paga.');
+        }
+    }
+
+    protected function validarFormaPagamento(Validator $validator, Despesa $despesa): void
+    {
+        if ($despesa->ehParcelada()) {
+            return;
+        }
+
         $formaPagamentoId = $this->input('forma_pagamento_id');
 
         if ($formaPagamentoId === null || $validator->errors()->has('forma_pagamento_id')) {

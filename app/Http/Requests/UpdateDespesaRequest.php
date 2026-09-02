@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\ValueObjects\Competencia;
 use App\Enums\ContextoDespesa;
 use App\Enums\TipoLancamentoDespesa;
 use App\Models\Despesa;
@@ -58,7 +59,25 @@ class UpdateDespesaRequest extends FormRequest
             $despesa = $this->route('despesa');
 
             $this->validarFormaPagamento($validator, $despesa->tipo_lancamento);
+            $this->validarDataFim($validator, $despesa);
         });
+    }
+
+    protected function validarDataFim(Validator $validator, Despesa $despesa): void
+    {
+        if ($despesa->tipo_lancamento !== TipoLancamentoDespesa::Mensal || ! $this->filled('data_fim')) {
+            return;
+        }
+
+        $novoFim = Competencia::deData($this->date('data_fim'));
+
+        $existeCompetenciaPagaAposNovoFim = $despesa->movimentacoes()
+            ->where('competencia', '>', $novoFim->paraData())
+            ->exists();
+
+        if ($existeCompetenciaPagaAposNovoFim) {
+            $validator->errors()->add('data_fim', 'Não é possível encerrar antes de uma competência já paga.');
+        }
     }
 
     protected function regraPrimeiroDiaDoMes(): Closure
