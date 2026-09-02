@@ -5,6 +5,8 @@ namespace App\Http\Requests;
 use App\Enums\ContextoDespesa;
 use App\Enums\TipoLancamentoDespesa;
 use App\Models\FormaPagamento;
+use Carbon\Carbon;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -63,6 +65,7 @@ class StoreDespesaRequest extends FormRequest
                 'required_if:tipo_lancamento,mensal',
                 'prohibited_unless:tipo_lancamento,mensal',
                 'date',
+                $this->regraPrimeiroDiaDoMes(),
             ],
             'data_fim' => [
                 'nullable',
@@ -92,6 +95,15 @@ class StoreDespesaRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->validarFormaPagamento($validator, $this->input('tipo_lancamento'));
         });
+    }
+
+    protected function regraPrimeiroDiaDoMes(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if ($value !== null && Carbon::parse($value)->day !== 1) {
+                $fail('A data de início deve ser o primeiro dia do mês.');
+            }
+        };
     }
 
     protected function validarFormaPagamento(Validator $validator, ?string $tipoLancamento): void

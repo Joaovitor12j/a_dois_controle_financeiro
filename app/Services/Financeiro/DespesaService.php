@@ -15,7 +15,7 @@ final class DespesaService
     {
         return Despesa::query()
             ->with(['formaPagamento', 'categoriaDespesa'])
-            ->orderBy('descricao')
+            ->orderByDesc('created_at')
             ->get();
     }
 

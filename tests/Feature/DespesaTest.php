@@ -234,6 +234,18 @@ it('constraint: despesa mensal com data_vencimento preenchida lança erro', func
     ]))->toThrow(QueryException::class);
 });
 
+it('constraint: despesa mensal com data_inicio fora do primeiro dia do mês lança erro', function () {
+    $contexto = novoContextoDespesa();
+
+    expect(fn () => despesaValida($contexto, [
+        'descricao' => 'Aluguel',
+        'tipo_lancamento' => TipoLancamentoDespesa::Mensal,
+        'data_vencimento' => null,
+        'dia_vencimento' => 10,
+        'data_inicio' => '2026-01-15',
+    ]))->toThrow(QueryException::class);
+});
+
 it('constraint: despesa parcelada sem forma_pagamento_id, numero_parcelas ou data_primeira_parcela lança erro', function (array $sobrescritas) {
     $contexto = novoContextoDespesa();
 
@@ -465,6 +477,17 @@ it('falha ao criar despesa mensal sem dia_vencimento ou data_inicio', function (
 
     expect(Despesa::count())->toBe(0);
 })->with(['dia_vencimento', 'data_inicio']);
+
+it('falha ao criar despesa mensal com data_inicio fora do primeiro dia do mês', function () {
+    $eu = Usuario::factory()->create();
+    $categoria = categoriaDespesaDeTeste();
+
+    $this->actingAs($eu)
+        ->post(route('despesas.store'), payloadDespesaMensal($categoria, ['data_inicio' => '2026-01-15']))
+        ->assertSessionHasErrors('data_inicio');
+
+    expect(Despesa::count())->toBe(0);
+});
 
 it('falha ao criar despesa mensal com data_fim anterior a data_inicio', function () {
     $eu = Usuario::factory()->create();

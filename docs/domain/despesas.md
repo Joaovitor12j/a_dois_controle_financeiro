@@ -42,14 +42,19 @@ Uma despesa tem um tipo de lançamento: **única**, **mensal** ou
 
 Despesa **única** tem uma data de vencimento, obrigatória, e não tem dia de
 vencimento, data de início, data de fim, número de parcelas nem data da
-primeira parcela — esses campos são proibidos para esse tipo.
+primeira parcela — esses campos são proibidos para esse tipo. Ver Pagamento,
+abaixo, para a origem do valor de `data_vencimento` quando a despesa já nasce
+paga.
 
 Despesa **mensal** tem um dia de vencimento (entre 1 e 31) e uma data de
-início, ambos obrigatórios. A data de fim é opcional e, quando informada, não
-pode ser anterior à data de início. Não tem data de vencimento, forma de
-pagamento, número de parcelas nem data da primeira parcela — esses campos são
-proibidos para esse tipo. Despesa mensal não é paga diretamente: não se
-aplica o conceito de "paga" à despesa em si (ver Pagamento, abaixo).
+início, ambos obrigatórios. A data de início representa o mês de início do
+lançamento, não um dia específico — é sempre registrada como o primeiro dia
+do mês, mesmo que a intenção seja apenas identificar mês e ano. A data de fim
+é opcional e, quando informada, não pode ser anterior à data de início. Não
+tem data de vencimento, forma de pagamento, número de parcelas nem data da
+primeira parcela — esses campos são proibidos para esse tipo. Despesa mensal
+não é paga diretamente: não se aplica o conceito de "paga" à despesa em si
+(ver Pagamento, abaixo).
 
 Despesa **parcelada** tem uma forma de pagamento, um número de parcelas
 (maior que zero) e uma data da primeira parcela, todos obrigatórios. Não tem
@@ -60,9 +65,19 @@ e não é garantida no banco, é validação de aplicação.
 
 ## Pagamento
 
-O conceito de "paga" só se aplica a despesa **única**. Uma despesa única
-nasce não paga. Ao ser paga, recebe uma data de pagamento e uma forma de
-pagamento, ambas obrigatórias nesse momento.
+O conceito de "paga" só se aplica a despesa **única**. Ela cobre dois casos de
+uso sob o mesmo modelo: uma conta a pagar (boleto, conta de consumo) — nasce
+não paga, com `data_vencimento` real — e um gasto pontual já ocorrido (ex.:
+compra no mercado) — nasce diretamente como já paga, sem vencimento no
+sentido estrito.
+
+Uma despesa única pode nascer não paga (com `data_vencimento`, sem
+`data_pagamento` nem `forma_pagamento_id` obrigatórios) ou já paga na criação
+(com `data_pagamento` e `forma_pagamento_id` obrigatórios). Nesse segundo
+caso, não existe formulário de vencimento — `data_vencimento` continua
+obrigatória no schema, mas é preenchida automaticamente com a mesma data de
+`data_pagamento`; não é um dado pedido ao usuário nem um conceito exposto
+separadamente.
 
 Enquanto não paga, a data de pagamento não é preenchida, mas a forma de
 pagamento pode ser informada com antecedência (ex.: já se sabe como a
@@ -105,5 +120,6 @@ Implementado em:
 `database/migrations/2026_08_31_000007_create_despesas_table.php`,
 `database/migrations/2026_08_31_000008_add_foreign_key_despesa_id_to_movimentacoes_table.php`,
 `database/migrations/2026_08_31_000009_fix_despesas_pagamento_check_constraint.php`,
+`database/migrations/2026_09_02_000001_add_despesas_data_inicio_primeiro_dia_check.php`,
 `app/Models/Despesa.php`, `app/Services/Financeiro/DespesaService.php`,
 `app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`.

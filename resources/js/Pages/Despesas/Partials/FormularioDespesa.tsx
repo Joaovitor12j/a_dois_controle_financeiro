@@ -55,6 +55,10 @@ function paraDataInput(data: string | null): string {
     return data ? data.slice(0, 10) : '';
 }
 
+function paraMesInput(data: string | null): string {
+    return data ? data.slice(0, 7) : '';
+}
+
 function ToggleDuplo<T extends string>({
     valor,
     opcoes,
@@ -113,9 +117,8 @@ export default function FormularioDespesa({
         clearErrors,
         transform,
     } = useForm({
-        contexto: despesa?.contexto ?? ('individual' as ContextoDespesa),
-        categoria_despesa_id:
-            despesa?.categoria_despesa_id ?? (categoriasDespesa[0]?.id ?? ''),
+        contexto: despesa?.contexto ?? ('conjunta' as ContextoDespesa),
+        categoria_despesa_id: despesa?.categoria_despesa_id ?? '',
         descricao: despesa?.descricao ?? '',
         tipo_lancamento:
             despesa?.tipo_lancamento ?? ('unica' as TipoLancamentoDespesa),
@@ -128,7 +131,7 @@ export default function FormularioDespesa({
 
         dia_vencimento:
             despesa?.dia_vencimento != null ? String(despesa.dia_vencimento) : '',
-        data_inicio: paraDataInput(despesa?.data_inicio ?? null),
+        data_inicio: paraMesInput(despesa?.data_inicio ?? null),
         data_fim: paraDataInput(despesa?.data_fim ?? null),
 
         numero_parcelas:
@@ -171,12 +174,19 @@ export default function FormularioDespesa({
             tipo_lancamento: despesa ? null : dados.tipo_lancamento,
             valor: valorFinal,
 
-            data_vencimento: ehUnica ? dados.data_vencimento || null : null,
-            paga: !despesa && ehUnica ? dados.paga : null,
-            data_pagamento:
-                !despesa && ehUnica && dados.paga
+            // Única já paga na criação não pede vencimento na tela: data_vencimento
+            // é preenchida com a própria data de pagamento (ver docs/domain/despesas.md).
+            data_vencimento: ehUnica
+                ? !despesa && dados.paga
                     ? dados.data_pagamento || null
-                    : null,
+                    : dados.data_vencimento || null
+                : null,
+            // "paga" tem NOT NULL + default(false) no banco: para mensal/parcelada e
+            // em edição precisa ficar AUSENTE do payload (não null) pra cair no default.
+            ...(!despesa && ehUnica ? { paga: dados.paga } : {}),
+            ...(!despesa && ehUnica && dados.paga
+                ? { data_pagamento: dados.data_pagamento || null }
+                : {}),
             forma_pagamento_id: ehParcelada
                 ? dados.forma_pagamento_id || null
                 : ehUnica && !despesa
@@ -187,7 +197,10 @@ export default function FormularioDespesa({
                 ehMensal && dados.dia_vencimento !== ''
                     ? Number(dados.dia_vencimento)
                     : null,
-            data_inicio: ehMensal ? dados.data_inicio || null : null,
+            data_inicio:
+                ehMensal && dados.data_inicio !== ''
+                    ? `${dados.data_inicio}-01`
+                    : null,
             data_fim: ehMensal && dados.data_fim !== '' ? dados.data_fim : null,
 
             numero_parcelas:
@@ -337,28 +350,6 @@ export default function FormularioDespesa({
 
                 <BlocoCondicional aberto={ehUnica}>
                     <div className="mt-4">
-                        <InputLabel
-                            htmlFor="data_vencimento"
-                            value="Data de vencimento"
-                        />
-
-                        <TextInput
-                            id="data_vencimento"
-                            type="date"
-                            className="mt-1.5 block w-full"
-                            value={data.data_vencimento}
-                            onChange={(evento) =>
-                                setData('data_vencimento', evento.target.value)
-                            }
-                        />
-
-                        <InputError
-                            className="mt-2"
-                            message={errors.data_vencimento}
-                        />
-                    </div>
-
-                    <div className="mt-4">
                         <InputLabel htmlFor="valor_unica" value="Valor" />
 
                         <TextInput
@@ -375,42 +366,23 @@ export default function FormularioDespesa({
                         <InputError className="mt-2" message={errors.valor} />
                     </div>
 
-                    <div className="mt-4">
-                        <InputLabel
-                            htmlFor="forma_pagamento_id"
-                            value="Forma de pagamento (opcional)"
-                        />
-
-                        <SelectInput
-                            id="forma_pagamento_id"
-                            className="mt-1.5 block w-full"
-                            value={data.forma_pagamento_id}
-                            onChange={(evento) =>
-                                setData('forma_pagamento_id', evento.target.value)
-                            }
-                        >
-                            <option value="">Selecione…</option>
-                            {formasPagamento.map((forma) => (
-                                <option key={forma.id} value={forma.id}>
-                                    {forma.nome}
-                                </option>
-                            ))}
-                        </SelectInput>
-
-                        <InputError
-                            className="mt-2"
-                            message={errors.forma_pagamento_id}
-                        />
-                    </div>
-
                     {!despesa && (
                         <div className="mt-4">
                             <label className="flex items-center gap-2">
                                 <Checkbox
                                     checked={data.paga}
-                                    onChange={(evento) =>
-                                        setData('paga', evento.target.checked)
-                                    }
+                                    onChange={(evento) => {
+                                        const marcado = evento.target.checked;
+
+                                        setData((atual) => ({
+                                            ...atual,
+                                            paga: marcado,
+                                            data_pagamento:
+                                                marcado && atual.data_pagamento === ''
+                                                    ? atual.data_vencimento
+                                                    : atual.data_pagamento,
+                                        }));
+                                    }}
                                 />
 
                                 <span className="text-sm font-medium text-tinta">
@@ -419,33 +391,6 @@ export default function FormularioDespesa({
                             </label>
 
                             <InputError className="mt-2" message={errors.paga} />
-
-                            <BlocoCondicional aberto={data.paga}>
-                                <div className="mt-4">
-                                    <InputLabel
-                                        htmlFor="data_pagamento"
-                                        value="Data de pagamento"
-                                    />
-
-                                    <TextInput
-                                        id="data_pagamento"
-                                        type="date"
-                                        className="mt-1.5 block w-full"
-                                        value={data.data_pagamento}
-                                        onChange={(evento) =>
-                                            setData(
-                                                'data_pagamento',
-                                                evento.target.value,
-                                            )
-                                        }
-                                    />
-
-                                    <InputError
-                                        className="mt-2"
-                                        message={errors.data_pagamento}
-                                    />
-                                </div>
-                            </BlocoCondicional>
                         </div>
                     )}
 
@@ -462,9 +407,107 @@ export default function FormularioDespesa({
                             </span>
                         </div>
                     )}
+
+                    <BlocoCondicional aberto={!despesa && data.paga}>
+                        <div className="mt-4">
+                            <InputLabel
+                                htmlFor="data_pagamento"
+                                value="Data de pagamento"
+                            />
+
+                            <TextInput
+                                id="data_pagamento"
+                                type="date"
+                                className="mt-1.5 block w-full"
+                                value={data.data_pagamento}
+                                onChange={(evento) =>
+                                    setData('data_pagamento', evento.target.value)
+                                }
+                            />
+
+                            <InputError
+                                className="mt-2"
+                                message={errors.data_pagamento}
+                            />
+                        </div>
+
+                        <div className="mt-4">
+                            <InputLabel
+                                htmlFor="forma_pagamento_id"
+                                value="Forma de pagamento"
+                            />
+
+                            <SelectInput
+                                id="forma_pagamento_id"
+                                className="mt-1.5 block w-full"
+                                value={data.forma_pagamento_id}
+                                onChange={(evento) =>
+                                    setData(
+                                        'forma_pagamento_id',
+                                        evento.target.value,
+                                    )
+                                }
+                            >
+                                <option value="" disabled>
+                                    Selecione…
+                                </option>
+                                {formasPagamento.map((forma) => (
+                                    <option key={forma.id} value={forma.id}>
+                                        {forma.nome}
+                                    </option>
+                                ))}
+                            </SelectInput>
+
+                            <InputError
+                                className="mt-2"
+                                message={errors.forma_pagamento_id}
+                            />
+                        </div>
+                    </BlocoCondicional>
+
+                    <BlocoCondicional aberto={despesa ? !despesa.paga : !data.paga}>
+                        <div className="mt-4">
+                            <InputLabel
+                                htmlFor="data_vencimento"
+                                value="Data de vencimento"
+                            />
+
+                            <TextInput
+                                id="data_vencimento"
+                                type="date"
+                                className="mt-1.5 block w-full"
+                                value={data.data_vencimento}
+                                onChange={(evento) =>
+                                    setData('data_vencimento', evento.target.value)
+                                }
+                            />
+
+                            <InputError
+                                className="mt-2"
+                                message={errors.data_vencimento}
+                            />
+                        </div>
+                    </BlocoCondicional>
                 </BlocoCondicional>
 
                 <BlocoCondicional aberto={ehMensal}>
+                    <div className="mt-4">
+                        <InputLabel htmlFor="valor_mensal" value="Valor" />
+
+                        <TextInput
+                            id="valor_mensal"
+                            className="mt-1.5 block w-full"
+                            inputMode="decimal"
+                            value={data.valor}
+                            onChange={(evento) =>
+                                setData('valor', evento.target.value)
+                            }
+                            placeholder="0,00"
+                        />
+
+                        <InputError className="mt-2" message={errors.valor} />
+                    </div>
+
                     <div className="mt-4 grid grid-cols-2 gap-4">
                         <div>
                             <InputLabel
@@ -493,12 +536,12 @@ export default function FormularioDespesa({
                         <div>
                             <InputLabel
                                 htmlFor="data_inicio"
-                                value="Data de início"
+                                value="Mês de início"
                             />
 
                             <TextInput
                                 id="data_inicio"
-                                type="date"
+                                type="month"
                                 className="mt-1.5 block w-full"
                                 value={data.data_inicio}
                                 onChange={(evento) =>

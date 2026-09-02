@@ -6,6 +6,8 @@ use App\Enums\ContextoDespesa;
 use App\Enums\TipoLancamentoDespesa;
 use App\Models\Despesa;
 use App\Models\FormaPagamento;
+use Carbon\Carbon;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -38,7 +40,7 @@ class UpdateDespesaRequest extends FormRequest
             ],
 
             'dia_vencimento' => [$ehMensal, 'integer', 'between:1,31'],
-            'data_inicio' => [$ehMensal, 'date'],
+            'data_inicio' => [$ehMensal, 'date', $this->regraPrimeiroDiaDoMes()],
             'data_fim' => [
                 $tipoLancamento === TipoLancamentoDespesa::Mensal ? 'nullable' : 'prohibited',
                 'date', 'after_or_equal:data_inicio',
@@ -57,6 +59,15 @@ class UpdateDespesaRequest extends FormRequest
 
             $this->validarFormaPagamento($validator, $despesa->tipo_lancamento);
         });
+    }
+
+    protected function regraPrimeiroDiaDoMes(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if ($value !== null && Carbon::parse($value)->day !== 1) {
+                $fail('A data de início deve ser o primeiro dia do mês.');
+            }
+        };
     }
 
     protected function validarFormaPagamento(Validator $validator, TipoLancamentoDespesa $tipoLancamento): void
