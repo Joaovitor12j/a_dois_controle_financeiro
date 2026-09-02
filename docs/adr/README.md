@@ -28,3 +28,4 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0009](0009-cartao-de-credito-como-extensao-de-forma-de-pagamento.md) | Cartão de crédito como extensão de forma de pagamento | Aceita |
 | [0010](0010-visibilidade-de-despesa-contexto-individual-conjunta.md) | Visibilidade de despesa: contexto individual/conjunta | Aceita |
 | [0012](0012-pagamento-de-despesa-como-movimentacao.md) | Pagamento de despesa como movimentação, não como atributo | Aceita |
+| [0013](0013-agregacao-casal-no-dashboard-bypass-pontual-donoscope.md) | Agregação casal no dashboard: bypass pontual do DonoScope | Aceita |

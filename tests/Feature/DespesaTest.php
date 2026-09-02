@@ -14,9 +14,11 @@ use App\Models\Scopes\DespesaScope;
 use App\Models\Scopes\DonoScope;
 use App\Models\Usuario;
 use App\Services\Financeiro\DespesaService;
+use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 
 function novoContextoDespesa(): object
 {
@@ -1006,6 +1008,58 @@ it('DespesaService::estaPagaNaCompetencia reflete a existência da movimentaçã
     criarMovimentacaoDespesa($despesa, $forma, '2026-03');
 
     expect($service->estaPagaNaCompetencia($despesa, $competencia))->toBeTrue();
+});
+
+// Index
+
+it('resolve quem pagou uma despesa conjunta mesmo quando foi o parceiro', function () {
+    Carbon::setTestNow('2026-08-15');
+
+    $eu = Usuario::factory()->create();
+    $parceiro = Usuario::factory()->create(['nome' => 'Parceiro']);
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    $contaParceiro = Conta::withoutGlobalScope(DonoScope::class)->create(['usuario_id' => $parceiro->id, 'nome' => 'Conta do parceiro']);
+    $formaParceiro = formaPagamentoDespesa($contaParceiro);
+
+    $conjunta = criarDespesaUnica($eu, $categoria, ['descricao' => 'Aluguel', 'contexto' => 'conjunta', 'data_vencimento' => '2026-08-10']);
+    criarMovimentacaoDespesa($conjunta, $formaParceiro, '2026-08-01');
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->component('Despesas/Index')
+            ->where('ocorrencias.0.movimentacao.forma_pagamento.conta.usuario.nome', 'Parceiro')
+        );
+
+    Carbon::setTestNow();
+});
+
+it('resolve o cartão de uma despesa parcelada criada pelo parceiro', function () {
+    Carbon::setTestNow('2026-09-15');
+
+    $eu = Usuario::factory()->create();
+    $parceiro = Usuario::factory()->create(['nome' => 'Parceiro']);
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    $contaParceiro = Conta::withoutGlobalScope(DonoScope::class)->create(['usuario_id' => $parceiro->id, 'nome' => 'Conta do parceiro']);
+    $cartaoParceiro = formaPagamentoDespesa($contaParceiro, 'credito', 'Cartão do parceiro');
+    cartaoCreditoDespesa($cartaoParceiro);
+
+    criarDespesaParcelada($eu, $categoria, $cartaoParceiro, ['contexto' => 'conjunta']);
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->component('Despesas/Index')
+            ->where('ocorrencias.0.despesa.forma_pagamento.conta.usuario.nome', 'Parceiro')
+        );
+
+    Carbon::setTestNow();
 });
 
 // Policy

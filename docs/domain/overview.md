@@ -50,6 +50,7 @@ conjunta não deve ser tratada como individual.
 | Rendas | [rendas.md](rendas.md) |
 | Despesas | [despesas.md](despesas.md) |
 | Movimentações | [movimentacoes.md](movimentacoes.md) |
+| Dashboard | [dashboard.md](dashboard.md) |
 
 ## Estado do redesenho
 

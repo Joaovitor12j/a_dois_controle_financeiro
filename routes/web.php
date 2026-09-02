@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ContaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DespesaController;
 use App\Http\Controllers\FormaPagamentoController;
 use App\Http\Controllers\LogoController;
@@ -8,7 +9,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RendaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return Auth::check()
@@ -17,9 +17,7 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/logos/{nome}', [LogoController::class, 'show'])->name('logos.show');
 

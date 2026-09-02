@@ -9,8 +9,10 @@ use App\Http\Requests\MarcarComoPagaDespesaRequest;
 use App\Http\Requests\StoreDespesaRequest;
 use App\Http\Requests\UpdateDespesaRequest;
 use App\Models\CategoriaDespesa;
+use App\Models\Conta;
 use App\Models\Despesa;
 use App\Models\FormaPagamento;
+use App\Models\Scopes\DonoScope;
 use App\Services\Financeiro\DespesaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -31,8 +33,10 @@ class DespesaController extends Controller
         $competencia = Competencia::deData(now());
 
         $ocorrencias = Despesa::with([
+            'formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
             'formaPagamento.conta.usuario',
             'categoriaDespesa',
+            'movimentacoes.formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
             'movimentacoes.formaPagamento.conta.usuario',
         ])
             ->get()
@@ -58,7 +62,8 @@ class DespesaController extends Controller
             'ocorrencias' => $ocorrencias,
             'competencia' => (string) $competencia,
             'categoriasDespesa' => CategoriaDespesa::orderBy('nome')->get(),
-            'formasPagamento' => FormaPagamento::with(['cartaoCredito', 'conta:id,nome'])
+            'formasPagamento' => FormaPagamento::whereIn('conta_id', Conta::pluck('id'))
+                ->with(['cartaoCredito', 'conta:id,nome'])
                 ->get()
                 ->sortBy(fn (FormaPagamento $forma) => "{$forma->conta->nome} $forma->nome")
                 ->values(),

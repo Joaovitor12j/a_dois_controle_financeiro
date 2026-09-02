@@ -121,6 +121,75 @@ export type Toast = {
     message: string;
 };
 
+export type ModoVisualizacao = 'individual' | 'casal';
+
+export interface ResumoPeriodo {
+    saldo: number;
+    saldoDeltaPct: number | null;
+    receita: number;
+    receitaDeltaPct: number | null;
+    despesa: number;
+    despesaDeltaPct: number | null;
+    resultado: number;
+    resultadoDeltaPct: number | null;
+}
+
+export interface PontoSerieSaldo {
+    dia: number;
+    valor: number;
+    tipo: 'realizado' | 'projetado';
+}
+
+export interface CategoriaResumoItem {
+    nome: string;
+    cor: string;
+    valor: number;
+}
+
+export interface PendenciaDespesaItem {
+    id: string;
+    descricao: string;
+    contexto: ContextoDespesa;
+    vencimento: string;
+    valor: number;
+}
+
+export interface AlertaItem {
+    titulo: string;
+    detalhe: string;
+    valor: number;
+    nivel: 'vinho' | 'ouro';
+}
+
+export interface ContribuicaoPessoaItem {
+    usuarioId: string;
+    nome: string;
+    cor: string;
+    valor: number;
+}
+
+export interface ContribuicaoPorPessoa {
+    receita: ContribuicaoPessoaItem[];
+    despesa: ContribuicaoPessoaItem[];
+}
+
+export interface DashboardProps {
+    modo: ModoVisualizacao;
+    competencia: string;
+    despesaRotulo: string;
+    resumo: ResumoPeriodo;
+    serieSaldo: PontoSerieSaldo[];
+    despesaPorCategoria: CategoriaResumoItem[];
+    receitaPorCategoria: CategoriaResumoItem[];
+    pendencias: PendenciaDespesaItem[];
+    alertas: AlertaItem[];
+    contribuicao: ContribuicaoPorPessoa | null;
+    categoriasDespesa: CategoriaDespesa[];
+    formasPagamento: FormaPagamento[];
+    contas: ContaResumo[];
+    categoriasRenda: CategoriaRenda[];
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
