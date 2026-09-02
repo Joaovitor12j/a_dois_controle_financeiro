@@ -92,6 +92,15 @@ quando a nova data cai antes de uma competência já paga — não é possível
 encerrar retroativamente um período que já teve pagamento registrado. Essa
 validação é de aplicação, não de banco.
 
+Despesa **única** pode ser criada já paga: a tela de criação aceita marcar a
+despesa como paga informando data e forma de pagamento com os demais
+dados. Isso não é um atributo persistido na despesa — ao criar, a aplicação
+grava a despesa e, se marcada como paga, cria na mesma operação a movimentação
+de pagamento na única competência possível da despesa (a da própria
+`data_vencimento`), pelo mesmo mecanismo de qualquer outra marcação de
+pagamento. Mensal e parcelada não têm essa opção na criação — só passam a ter
+competências pagas após criadas, pela ação dedicada de marcar como paga.
+
 ## Questões em aberto
 
 - **Relação entre parcelamento e fatura.** Uma despesa parcelada paga em

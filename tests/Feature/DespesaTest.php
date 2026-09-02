@@ -426,6 +426,69 @@ it('cria despesa com sucesso quando o lançamento é único', function () {
         ->and($despesa->usuario_id)->toBe($eu->id);
 });
 
+it('cria despesa única já paga e a movimentação nasce na competência da data de vencimento', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+
+    $this->actingAs($eu)
+        ->post(route('despesas.store'), payloadDespesaUnica($categoria, [
+            'data_vencimento' => '2026-08-10',
+            'paga' => true,
+            'forma_pagamento_id' => $forma->id,
+            'data_pagamento' => '2026-08-05',
+        ]))
+        ->assertRedirect(route('despesas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Despesa criada com sucesso.']);
+
+    $despesa = Despesa::sole();
+
+    expect($despesa->forma_pagamento_id)->toBeNull();
+
+    $movimentacao = Movimentacao::sole();
+
+    expect($movimentacao->despesa_id)->toBe($despesa->id)
+        ->and($movimentacao->forma_pagamento_id)->toBe($forma->id)
+        ->and($movimentacao->getRawOriginal('data'))->toBe('2026-08-05')
+        ->and((string) $movimentacao->competencia)->toBe('2026-08');
+});
+
+it('falha ao criar despesa única paga sem forma_pagamento_id ou data_pagamento', function (string $campo) {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+
+    $this->actingAs($eu)
+        ->post(route('despesas.store'), payloadDespesaUnica($categoria, [
+            'paga' => true,
+            'forma_pagamento_id' => $forma->id,
+            'data_pagamento' => '2026-08-05',
+            $campo => null,
+        ]))
+        ->assertSessionHasErrors($campo);
+
+    expect(Despesa::count())->toBe(0);
+})->with(['forma_pagamento_id', 'data_pagamento']);
+
+it('falha ao criar despesa mensal ou parcelada com paga preenchido', function (string $tipo) {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $cartao = formaPagamentoDespesa($conta, 'credito', 'Cartão');
+
+    $payload = $tipo === 'mensal'
+        ? payloadDespesaMensal($categoria, ['paga' => true])
+        : payloadDespesaParcelada($categoria, $cartao, ['paga' => true]);
+
+    $this->actingAs($eu)
+        ->post(route('despesas.store'), $payload)
+        ->assertSessionHasErrors('paga');
+
+    expect(Despesa::count())->toBe(0);
+})->with(['mensal', 'parcelada']);
+
 it('cria despesa com sucesso quando o lançamento é mensal', function () {
     $eu = Usuario::factory()->create();
     $categoria = categoriaDespesaDeTeste();

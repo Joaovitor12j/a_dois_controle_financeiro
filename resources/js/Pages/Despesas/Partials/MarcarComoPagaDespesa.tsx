@@ -1,3 +1,4 @@
+import BlocoCondicional from '@/Components/BlocoCondicional';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -16,20 +17,25 @@ function rotuloFormaPagamento(forma: FormaPagamento): string {
 
 export default function MarcarComoPagaDespesa({
     despesa,
+    competencia,
     formasPagamento,
     aberto,
     aoFechar,
 }: {
     despesa: Despesa | null;
+    competencia: string;
     formasPagamento: FormaPagamento[];
     aberto: boolean;
     aoFechar: () => void;
 }) {
     const { data, setData, patch, processing, errors, clearErrors, reset } =
         useForm({
+            competencia,
             forma_pagamento_id: '',
             data_pagamento: '',
         });
+
+    const ehParcelada = despesa?.tipo_lancamento === 'parcelada';
 
     const submeter: FormEventHandler = (evento) => {
         evento.preventDefault();
@@ -84,35 +90,37 @@ export default function MarcarComoPagaDespesa({
                     />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="forma_pagamento_id"
-                        value="Forma de pagamento"
-                    />
+                <BlocoCondicional aberto={!ehParcelada}>
+                    <div className="mt-4">
+                        <InputLabel
+                            htmlFor="forma_pagamento_id"
+                            value="Forma de pagamento"
+                        />
 
-                    <SelectInput
-                        id="forma_pagamento_id"
-                        className="mt-1.5 block w-full"
-                        value={data.forma_pagamento_id}
-                        onChange={(evento) =>
-                            setData('forma_pagamento_id', evento.target.value)
-                        }
-                    >
-                        <option value="" disabled>
-                            Selecione…
-                        </option>
-                        {formasPagamento.map((forma) => (
-                            <option key={forma.id} value={forma.id}>
-                                {rotuloFormaPagamento(forma)}
+                        <SelectInput
+                            id="forma_pagamento_id"
+                            className="mt-1.5 block w-full"
+                            value={data.forma_pagamento_id}
+                            onChange={(evento) =>
+                                setData('forma_pagamento_id', evento.target.value)
+                            }
+                        >
+                            <option value="" disabled>
+                                Selecione…
                             </option>
-                        ))}
-                    </SelectInput>
+                            {formasPagamento.map((forma) => (
+                                <option key={forma.id} value={forma.id}>
+                                    {rotuloFormaPagamento(forma)}
+                                </option>
+                            ))}
+                        </SelectInput>
 
-                    <InputError
-                        className="mt-2"
-                        message={errors.forma_pagamento_id}
-                    />
-                </div>
+                        <InputError
+                            className="mt-2"
+                            message={errors.forma_pagamento_id}
+                        />
+                    </div>
+                </BlocoCondicional>
 
                 <div className="mt-8 flex justify-end gap-3">
                     <SecondaryButton onClick={fechar} disabled={processing}>

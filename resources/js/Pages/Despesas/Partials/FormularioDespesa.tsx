@@ -129,9 +129,9 @@ export default function FormularioDespesa({
         valor: despesa ? paraReais(despesa.valor) : '',
 
         data_vencimento: paraDataInput(despesa?.data_vencimento ?? null),
-        paga: despesa?.paga ?? false,
-        data_pagamento: paraDataInput(despesa?.data_pagamento ?? null),
         forma_pagamento_id: despesa?.forma_pagamento_id ?? '',
+        paga: false,
+        data_pagamento: '',
 
         dia_vencimento:
             despesa?.dia_vencimento != null ? String(despesa.dia_vencimento) : '',
@@ -185,15 +185,13 @@ export default function FormularioDespesa({
                     ? dados.data_pagamento || null
                     : dados.data_vencimento || null
                 : null,
-            // "paga" tem NOT NULL + default(false) no banco: para mensal/parcelada e
-            // em edição precisa ficar AUSENTE do payload (não null) pra cair no default.
             ...(!despesa && ehUnica ? { paga: dados.paga } : {}),
             ...(!despesa && ehUnica && dados.paga
                 ? { data_pagamento: dados.data_pagamento || null }
                 : {}),
             forma_pagamento_id: ehParcelada
                 ? dados.forma_pagamento_id || null
-                : ehUnica && !despesa
+                : ehUnica && !despesa && dados.paga
                     ? dados.forma_pagamento_id || null
                     : null,
 
@@ -398,20 +396,6 @@ export default function FormularioDespesa({
                         </div>
                     )}
 
-                    {despesa && (
-                        <div className="mt-4">
-                            <span
-                                className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                                    despesa.paga
-                                        ? 'bg-verde/10 text-verde'
-                                        : 'bg-tinta/10 text-tinta-claro'
-                                }`}
-                            >
-                                {despesa.paga ? 'Paga' : 'Pendente'}
-                            </span>
-                        </div>
-                    )}
-
                     <BlocoCondicional aberto={!despesa && data.paga}>
                         <div className="mt-4">
                             <InputLabel
@@ -469,7 +453,7 @@ export default function FormularioDespesa({
                         </div>
                     </BlocoCondicional>
 
-                    <BlocoCondicional aberto={despesa ? !despesa.paga : !data.paga}>
+                    <BlocoCondicional aberto={despesa ? true : !data.paga}>
                         <div className="mt-4">
                             <InputLabel
                                 htmlFor="data_vencimento"

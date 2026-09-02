@@ -7,9 +7,12 @@ export interface Usuario {
 
 export interface Movimentacao {
     id: string;
+    forma_pagamento_id: string;
     valor: number;
     data: string;
+    competencia: string | null;
     is_saldo_inicial: boolean;
+    forma_pagamento?: FormaPagamento;
 }
 
 export type TipoFormaPagamento = 'debito' | 'dinheiro' | 'pix' | 'credito' | 'vale' | 'beneficio';
@@ -93,8 +96,6 @@ export interface Despesa {
     tipo_lancamento: TipoLancamentoDespesa;
 
     data_vencimento: string | null;
-    paga: boolean;
-    data_pagamento: string | null;
 
     dia_vencimento: number | null;
     data_inicio: string | null;
@@ -105,6 +106,14 @@ export interface Despesa {
 
     forma_pagamento?: FormaPagamento;
     categoria_despesa?: CategoriaDespesa;
+}
+
+export interface OcorrenciaDespesa {
+    despesa: Despesa;
+    competencia: string;
+    paga: boolean;
+    numero_parcela: number | null;
+    movimentacao: Movimentacao | null;
 }
 
 export type Toast = {

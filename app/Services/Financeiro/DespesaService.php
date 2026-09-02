@@ -3,12 +3,10 @@
 namespace App\Services\Financeiro;
 
 use App\Domain\ValueObjects\Competencia;
-use App\Models\CategoriaDespesa;
 use App\Models\Despesa;
-use App\Models\FormaPagamento;
 use App\Models\Movimentacao;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 
 final class DespesaService
@@ -22,29 +20,29 @@ final class DespesaService
             ->get();
     }
 
-    /** @return Collection<int, CategoriaDespesa> */
-    public function categoriasDisponiveis(): Collection
-    {
-        return CategoriaDespesa::query()->orderBy('nome')->get();
-    }
-
-    /** @return SupportCollection<int, FormaPagamento> */
-    public function formasPagamentoDisponiveis(): SupportCollection
-    {
-        return FormaPagamento::query()
-            ->with(['cartaoCredito', 'conta:id,nome'])
-            ->get()
-            ->sortBy(fn (FormaPagamento $forma) => "{$forma->conta->nome} $forma->nome")
-            ->values();
-    }
-
     /** @param array<string, mixed> $atributos */
     public function criar(array $atributos): Despesa
     {
-        return Despesa::create([
+        $paga = (bool) ($atributos['paga'] ?? false);
+        $formaPagamentoId = $atributos['forma_pagamento_id'] ?? null;
+        $dataPagamento = $atributos['data_pagamento'] ?? null;
+
+        unset($atributos['paga'], $atributos['data_pagamento']);
+
+        if ($paga) {
+            unset($atributos['forma_pagamento_id']);
+        }
+
+        $despesa = Despesa::create([
             ...$atributos,
             'usuario_id' => Auth::id(),
         ]);
+
+        if ($paga) {
+            $this->marcarComoPaga($despesa, Competencia::deData(Carbon::parse($despesa->data_vencimento)), $formaPagamentoId, $dataPagamento);
+        }
+
+        return $despesa;
     }
 
     /** @param array<string, mixed> $atributos */

@@ -30,12 +30,23 @@ class StoreDespesaRequest extends FormRequest
                 'prohibited_unless:tipo_lancamento,unica',
                 'date',
             ],
+            'paga' => [
+                'nullable',
+                'boolean',
+                'prohibited_unless:tipo_lancamento,unica',
+            ],
             'forma_pagamento_id' => [
                 'nullable',
                 'uuid',
                 Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),
-                'prohibited_unless:tipo_lancamento,parcelada',
-                'required_if:tipo_lancamento,parcelada',
+                Rule::requiredIf(fn () => $this->ehFormaPagamentoObrigatoria()),
+                Rule::prohibitedIf(fn () => ! $this->ehFormaPagamentoObrigatoria()),
+            ],
+            'data_pagamento' => [
+                'nullable',
+                'date',
+                Rule::requiredIf(fn () => $this->ehDespesaUnicaPaga()),
+                Rule::prohibitedIf(fn () => ! $this->ehDespesaUnicaPaga()),
             ],
 
             'dia_vencimento' => [
@@ -80,6 +91,18 @@ class StoreDespesaRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->validarFormaPagamento($validator, $this->input('tipo_lancamento'));
         });
+    }
+
+    protected function ehDespesaUnicaPaga(): bool
+    {
+        return $this->input('tipo_lancamento') === TipoLancamentoDespesa::Unica->value
+            && $this->boolean('paga');
+    }
+
+    protected function ehFormaPagamentoObrigatoria(): bool
+    {
+        return $this->input('tipo_lancamento') === TipoLancamentoDespesa::Parcelada->value
+            || $this->ehDespesaUnicaPaga();
     }
 
     protected function regraPrimeiroDiaDoMes(): Closure

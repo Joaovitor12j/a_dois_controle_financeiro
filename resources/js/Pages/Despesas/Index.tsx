@@ -1,12 +1,12 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import type { CategoriaDespesa, Despesa, FormaPagamento } from '@/types';
+import type { CategoriaDespesa, Despesa, FormaPagamento, OcorrenciaDespesa } from '@/types';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import ConfirmarDesfazerPagamento from './Partials/ConfirmarDesfazerPagamento';
 import ConfirmarExclusaoDespesa from './Partials/ConfirmarExclusaoDespesa';
 import FormularioDespesa from './Partials/FormularioDespesa';
-import ItemDespesa from './Partials/ItemDespesa';
+import ItemOcorrenciaDespesa from './Partials/ItemOcorrenciaDespesa';
 import MarcarComoPagaDespesa from './Partials/MarcarComoPagaDespesa';
 
 interface AlvoDeFormulario {
@@ -19,32 +19,59 @@ interface AlvoDeExclusao {
     despesa: Despesa | null;
 }
 
+interface AlvoDeOcorrencia {
+    aberto: boolean;
+    despesa: Despesa | null;
+    competencia: string;
+}
+
 const formularioFechado: AlvoDeFormulario = { aberto: false, despesa: null };
 const exclusaoFechada: AlvoDeExclusao = { aberto: false, despesa: null };
-const marcarComoPagaFechado: AlvoDeExclusao = { aberto: false, despesa: null };
-const desfazerPagamentoFechado: AlvoDeExclusao = {
+const ocorrenciaFechada: AlvoDeOcorrencia = {
     aberto: false,
     despesa: null,
+    competencia: '',
 };
 
+const nomesMeses = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
+];
+
+function formatarCompetencia(competencia: string): string {
+    const [ano, mes] = competencia.split('-');
+
+    return `${nomesMeses[Number(mes) - 1]} de ${ano}`;
+}
+
 export default function Index({
-    despesas,
+    ocorrencias,
+    competencia,
     categoriasDespesa,
     formasPagamento,
 }: {
-    despesas: Despesa[];
+    ocorrencias: OcorrenciaDespesa[];
+    competencia: string;
     categoriasDespesa: CategoriaDespesa[];
     formasPagamento: FormaPagamento[];
 }) {
     const [formulario, setFormulario] =
         useState<AlvoDeFormulario>(formularioFechado);
     const [exclusao, setExclusao] = useState<AlvoDeExclusao>(exclusaoFechada);
-    const [marcarComoPaga, setMarcarComoPaga] = useState<AlvoDeExclusao>(
-        marcarComoPagaFechado,
-    );
-    const [desfazerPagamento, setDesfazerPagamento] = useState<AlvoDeExclusao>(
-        desfazerPagamentoFechado,
-    );
+    const [marcarComoPaga, setMarcarComoPaga] =
+        useState<AlvoDeOcorrencia>(ocorrenciaFechada);
+    const [desfazerPagamento, setDesfazerPagamento] =
+        useState<AlvoDeOcorrencia>(ocorrenciaFechada);
     const [aberturas, setAberturas] = useState(0);
 
     const abrirFormulario = (despesa: Despesa | null) => {
@@ -74,15 +101,11 @@ export default function Index({
                         </h1>
 
                         <p className="mt-1 text-sm text-tinta-claro">
-                            {despesas.length === 0
-                                ? 'Nenhuma despesa ainda'
-                                : despesas.length === 1
-                                  ? '1 despesa lançada'
-                                  : `${despesas.length} despesas lançadas`}
+                            {formatarCompetencia(competencia)}
                         </p>
                     </div>
 
-                    {despesas.length > 0 && (
+                    {ocorrencias.length > 0 && (
                         <PrimaryButton
                             type="button"
                             onClick={() => abrirFormulario(null)}
@@ -97,7 +120,7 @@ export default function Index({
             <Head title="Despesas" />
 
             <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-                {despesas.length === 0 ? (
+                {ocorrencias.length === 0 ? (
                     <div className="flex flex-col items-center rounded-xl border border-dashed border-tinta/20 bg-white/50 px-6 py-16 text-center">
                         <span
                             aria-hidden="true"
@@ -124,24 +147,31 @@ export default function Index({
                     </div>
                 ) : (
                     <div className="grid items-start gap-6 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
-                        {despesas.map((despesa) => (
-                            <ItemDespesa
-                                key={despesa.id}
-                                despesa={despesa}
-                                aoEditar={() => abrirFormulario(despesa)}
+                        {ocorrencias.map((ocorrencia) => (
+                            <ItemOcorrenciaDespesa
+                                key={`${ocorrencia.despesa.id}-${ocorrencia.competencia}`}
+                                ocorrencia={ocorrencia}
+                                aoEditar={() =>
+                                    abrirFormulario(ocorrencia.despesa)
+                                }
                                 aoExcluir={() =>
-                                    setExclusao({ aberto: true, despesa })
+                                    setExclusao({
+                                        aberto: true,
+                                        despesa: ocorrencia.despesa,
+                                    })
                                 }
                                 aoMarcarComoPaga={() =>
                                     setMarcarComoPaga({
                                         aberto: true,
-                                        despesa,
+                                        despesa: ocorrencia.despesa,
+                                        competencia: ocorrencia.competencia,
                                     })
                                 }
                                 aoDesfazerPagamento={() =>
                                     setDesfazerPagamento({
                                         aberto: true,
-                                        despesa,
+                                        despesa: ocorrencia.despesa,
+                                        competencia: ocorrencia.competencia,
                                     })
                                 }
                             />
@@ -166,7 +196,9 @@ export default function Index({
             />
 
             <MarcarComoPagaDespesa
+                key={`${marcarComoPaga.despesa?.id ?? 'nenhuma'}-${marcarComoPaga.competencia}`}
                 despesa={marcarComoPaga.despesa}
+                competencia={marcarComoPaga.competencia}
                 formasPagamento={formasPagamento}
                 aberto={marcarComoPaga.aberto}
                 aoFechar={fecharMarcarComoPaga}
@@ -174,6 +206,7 @@ export default function Index({
 
             <ConfirmarDesfazerPagamento
                 despesa={desfazerPagamento.despesa}
+                competencia={desfazerPagamento.competencia}
                 aberto={desfazerPagamento.aberto}
                 aoFechar={fecharDesfazerPagamento}
             />

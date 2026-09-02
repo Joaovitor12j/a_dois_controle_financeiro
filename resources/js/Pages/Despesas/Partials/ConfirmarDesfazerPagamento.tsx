@@ -7,10 +7,12 @@ import { useState } from 'react';
 
 export default function ConfirmarDesfazerPagamento({
     despesa,
+    competencia,
     aberto,
     aoFechar,
 }: {
     despesa: Despesa | null;
+    competencia: string;
     aberto: boolean;
     aoFechar: () => void;
 }) {
@@ -21,7 +23,7 @@ export default function ConfirmarDesfazerPagamento({
             return;
         }
 
-        router.patch(route('despesas.desfazer-pagamento', despesa.id), {}, {
+        router.patch(route('despesas.desfazer-pagamento', despesa.id), { competencia }, {
             preserveScroll: true,
             onStart: () => setProcessando(true),
             onFinish: () => setProcessando(false),
