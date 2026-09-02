@@ -4,9 +4,20 @@ Instruções de projeto para trabalhar neste repositório.
 
 ## Contexto
 
-Migração de controle-total (Next.js + Supabase + Drizzle) para Laravel + Breeze + Inertia + React. Banco novo, sem ETL — só os 2 usuários fixos são seedados. O Next.js antigo não é referência de código a seguir.
+Controle financeiro para casal, Laravel + Breeze + Inertia + React. Dois usuários fixos, sem self-signup. Regra de negócio é própria do projeto, não herdada de nenhum sistema anterior — `docs/domain/` é a fonte de verdade.
 
-O domínio está sendo redesenhado do zero, um domínio por vez. `docs/domain/` é a fonte de verdade das regras de negócio.
+Domínios com regra definida hoje:
+
+| Domínio | Documento |
+| --- | --- |
+| Contas | [contas.md](docs/domain/contas.md) |
+| Formas de pagamento | [formas-pagamento.md](docs/domain/formas-pagamento.md) |
+| Rendas | [rendas.md](docs/domain/rendas.md) |
+| Despesas | [despesas.md](docs/domain/despesas.md) |
+| Movimentações | [movimentacoes.md](docs/domain/movimentacoes.md) |
+| Dashboard | [dashboard.md](docs/domain/dashboard.md) |
+
+O domínio segue sendo desenhado incrementalmente, um recorte por vez (ex.: movimentações hoje cobre só pagamento de despesa — renda, fatura e saldo inicial ainda não têm regra). Um domínio sem documento em `docs/domain/` não tem regra definida; não inferir do código.
 
 ## Stack e ambiente
 
