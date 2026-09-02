@@ -57,6 +57,28 @@ it('cria forma de pagamento com saldo inicial', function () {
         ->and($movimentacao->is_saldo_inicial)->toBeTrue();
 });
 
+it('cria forma de pagamento não-crédito quando o payload envia os campos de crédito nulos', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Nubank');
+
+    $this->actingAs($eu)
+        ->post(route('formas-pagamento.store'), [
+            'conta_id' => $conta->id,
+            'nome' => 'Vale Alimentação',
+            'tipo' => 'vale',
+            'saldo_inicial' => null,
+            'data_saldo_inicial' => '',
+            'limite_total' => null,
+            'limite_usado_abertura' => null,
+            'dia_fechamento' => null,
+            'dia_vencimento' => null,
+        ])
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento criada com sucesso.']);
+
+    expect(FormaPagamento::sole()->tipo->value)->toBe('vale');
+});
+
 it('exige data quando informa saldo inicial', function () {
     $eu = Usuario::factory()->create();
     $conta = contaComDonoDe($eu, 'Nubank');
@@ -82,6 +104,23 @@ it('atualiza a própria forma de pagamento', function () {
         ->put(route('formas-pagamento.update', $forma), ['nome' => 'Débito Nubank'])
         ->assertRedirect(route('contas.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento atualizada com sucesso.']);
+
+    expect($forma->fresh()?->nome)->toBe('Débito Nubank');
+});
+
+it('atualiza forma de pagamento não-crédito quando o payload envia os campos de crédito nulos', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Nubank');
+    $forma = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Débito', 'tipo' => 'debito']);
+
+    $this->actingAs($eu)
+        ->put(route('formas-pagamento.update', $forma), [
+            'nome' => 'Débito Nubank',
+            'limite_total' => null,
+            'dia_fechamento' => null,
+            'dia_vencimento' => null,
+        ])
+        ->assertRedirect(route('contas.index'));
 
     expect($forma->fresh()?->nome)->toBe('Débito Nubank');
 });
@@ -251,4 +290,46 @@ it('exclui a própria forma de pagamento do tipo crédito sem deixar a extensão
 
     expect(FormaPagamento::find($forma->id))->toBeNull()
         ->and(FormaPagamento::withTrashed()->find($forma->id)?->cartaoCredito)->not->toBeNull();
+});
+
+it('cria forma de pagamento do tipo vale sem saldo inicial', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Swile');
+
+    $this->actingAs($eu)
+        ->post(route('formas-pagamento.store'), [
+            'conta_id' => $conta->id,
+            'nome' => 'Auxílio home office',
+            'tipo' => 'vale',
+        ])
+        ->assertRedirect(route('contas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Forma de pagamento criada com sucesso.']);
+
+    $forma = FormaPagamento::sole();
+
+    expect($forma->nome)->toBe('Auxílio home office')
+        ->and($forma->tipo->value)->toBe('vale')
+        ->and($forma->saldoInicial)->toBeNull();
+});
+
+it('cria forma de pagamento do tipo benefício com saldo inicial', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Swile');
+
+    $this->actingAs($eu)
+        ->post(route('formas-pagamento.store'), [
+            'conta_id' => $conta->id,
+            'nome' => 'Vale alimentação',
+            'tipo' => 'beneficio',
+            'saldo_inicial' => 15000,
+            'data_saldo_inicial' => '2026-09-01',
+        ])
+        ->assertRedirect(route('contas.index'));
+
+    $forma = FormaPagamento::sole();
+    $movimentacao = Movimentacao::sole();
+
+    expect($forma->tipo->value)->toBe('beneficio')
+        ->and($movimentacao->forma_pagamento_id)->toBe($forma->id)
+        ->and($movimentacao->is_saldo_inicial)->toBeTrue();
 });

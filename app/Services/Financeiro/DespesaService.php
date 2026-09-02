@@ -2,7 +2,9 @@
 
 namespace App\Services\Financeiro;
 
+use App\Models\CategoriaDespesa;
 use App\Models\Despesa;
+use App\Models\FormaPagamento;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,6 +17,18 @@ final class DespesaService
             ->with(['formaPagamento', 'categoriaDespesa'])
             ->orderBy('descricao')
             ->get();
+    }
+
+    /** @return Collection<int, CategoriaDespesa> */
+    public function categoriasDisponiveis(): Collection
+    {
+        return CategoriaDespesa::query()->orderBy('nome')->get();
+    }
+
+    /** @return Collection<int, FormaPagamento> */
+    public function formasPagamentoDisponiveis(): Collection
+    {
+        return FormaPagamento::query()->with('cartaoCredito')->orderBy('nome')->get();
     }
 
     /** @param array<string, mixed> $atributos */

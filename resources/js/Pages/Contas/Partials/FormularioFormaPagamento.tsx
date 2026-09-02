@@ -15,6 +15,8 @@ const rotuloTipo: Record<TipoFormaPagamento, string> = {
     dinheiro: 'Dinheiro',
     pix: 'Pix',
     credito: 'Crédito',
+    vale: 'Vale',
+    beneficio: 'Benefício',
 };
 
 function paraCentavos(valorEmReais: string): number | null {
@@ -113,7 +115,7 @@ export default function FormularioFormaPagamento({
                 <p className="mt-1.5 text-sm text-tinta-claro">
                     {formaPagamento
                         ? 'Ajuste o nome desta forma de pagamento.'
-                        : 'Débito, dinheiro, pix ou crédito — o meio por onde o dinheiro passa nesta conta.'}
+                        : 'Débito, dinheiro, pix, crédito, vale ou benefício — o meio por onde o dinheiro passa nesta conta.'}
                 </p>
 
                 <FormErrorSummary errors={errors} />

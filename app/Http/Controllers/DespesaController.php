@@ -23,6 +23,8 @@ class DespesaController extends Controller
 
         return Inertia::render('Despesas/Index', [
             'despesas' => $this->despesas->listar(),
+            'categoriasDespesa' => $this->despesas->categoriasDisponiveis(),
+            'formasPagamento' => $this->despesas->formasPagamentoDisponiveis(),
         ]);
     }
 

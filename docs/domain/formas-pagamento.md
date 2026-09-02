@@ -7,7 +7,7 @@ repetidos aqui. Regras de propriedade e exclusão de conta estão em
 ## Conceito
 
 Uma forma de pagamento é um meio pelo qual o dinheiro entra ou sai de uma
-conta: débito, dinheiro, pix ou crédito.
+conta: débito, dinheiro, pix, crédito, vale ou benefício.
 
 Toda forma de pagamento pertence a exatamente uma conta e, por herança, ao
 usuário dono dessa conta. Não existe forma de pagamento sem conta.
@@ -25,7 +25,7 @@ inexistente, não como proibida — mesmo princípio aplicado a conta em
 ## Identificação
 
 Uma forma de pagamento é identificada por um nome, obrigatório, e um tipo,
-obrigatório, dentre débito, dinheiro, pix ou crédito.
+obrigatório, dentre débito, dinheiro, pix, crédito, vale ou benefício.
 
 O tipo é imutável: não existe operação de edição de tipo depois que a forma
 de pagamento é criada. Corrigir um tipo cadastrado errado exige excluir a
@@ -66,6 +66,15 @@ ele é um campo próprio do crédito e não gera movimentação.
 Uma forma de pagamento do tipo crédito tem um dia de fechamento e um dia de
 vencimento, ambos obrigatórios e entre 1 e 31.
 
+## Vale e benefício
+
+Vale e benefício são dois tipos de forma de pagamento que representam um
+meio de recebimento como vale-alimentação, vale-transporte ou auxílio home
+office. Estruturalmente, são idênticos a débito, dinheiro e pix: nome, tipo
+e saldo inicial opcional — sem dados próprios adicionais. A diferença para
+os demais tipos é só o rótulo usado para classificar esse meio, para que o
+usuário identifique esse tipo de recebimento separadamente na conta.
+
 ## Exclusão
 
 A exclusão de uma forma de pagamento é lógica, seguindo a mesma regra geral
@@ -96,4 +105,5 @@ Implementado em: `app/Models/FormaPagamento.php`, `app/Models/CartaoCredito.php`
 `app/Policies/FormaPagamentoPolicy.php`,
 `app/Http/Controllers/FormaPagamentoController.php`,
 `database/migrations/2026_08_29_000002_create_formas_pagamento_table.php`,
-`database/migrations/2026_08_31_000005_recriar_cartoes_credito_como_extensao_forma_pagamento.php`.
+`database/migrations/2026_08_31_000005_recriar_cartoes_credito_como_extensao_forma_pagamento.php`,
+`database/migrations/2026_09_01_000001_add_vale_beneficio_to_tipo_forma_pagamento_enum.php`.

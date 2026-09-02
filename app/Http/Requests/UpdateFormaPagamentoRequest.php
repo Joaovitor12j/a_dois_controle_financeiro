@@ -23,9 +23,9 @@ class UpdateFormaPagamentoRequest extends FormRequest
         return [
             'nome' => ['required', 'string', 'max:255'],
             'tipo' => ['prohibited'],
-            'limite_total' => [$ehCredito, 'integer', 'min:0'],
-            'dia_fechamento' => [$ehCredito, 'integer', 'between:1,31'],
-            'dia_vencimento' => [$ehCredito, 'integer', 'between:1,31'],
+            'limite_total' => [$ehCredito, 'nullable', 'integer', 'min:0'],
+            'dia_fechamento' => [$ehCredito, 'nullable', 'integer', 'between:1,31'],
+            'dia_vencimento' => [$ehCredito, 'nullable', 'integer', 'between:1,31'],
         ];
     }
 }

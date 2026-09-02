@@ -22,6 +22,8 @@ const rotuloTipo: Record<TipoFormaPagamento, string> = {
     dinheiro: 'Dinheiro',
     pix: 'Pix',
     credito: 'Crédito',
+    vale: 'Vale',
+    beneficio: 'Benefício',
 };
 
 const corTipo: Record<TipoFormaPagamento, string> = {
@@ -29,6 +31,8 @@ const corTipo: Record<TipoFormaPagamento, string> = {
     dinheiro: 'bg-verde/10 text-verde-escuro',
     pix: 'bg-ouro/20 text-ouro',
     credito: 'bg-vinho/10 text-vinho-escuro',
+    vale: 'bg-ouro/10 text-ouro',
+    beneficio: 'bg-ouro/10 text-ouro',
 };
 
 function Seta({ aberta }: { aberta: boolean }) {

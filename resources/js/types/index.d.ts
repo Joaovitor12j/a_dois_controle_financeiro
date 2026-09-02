@@ -12,7 +12,7 @@ export interface Movimentacao {
     is_saldo_inicial: boolean;
 }
 
-export type TipoFormaPagamento = 'debito' | 'dinheiro' | 'pix' | 'credito';
+export type TipoFormaPagamento = 'debito' | 'dinheiro' | 'pix' | 'credito' | 'vale' | 'beneficio';
 
 export interface CartaoCredito {
     limite_total: number;
@@ -69,6 +69,41 @@ export interface Renda {
     data_fim: string | null;
     conta: ContaResumo;
     categoria_renda: CategoriaRenda;
+}
+
+export type TipoLancamentoDespesa = 'unica' | 'mensal' | 'parcelada';
+export type ContextoDespesa = 'individual' | 'conjunta';
+
+export interface CategoriaDespesa {
+    id: string;
+    nome: string;
+    cor: string;
+    icone: string;
+}
+
+export interface Despesa {
+    id: string;
+    usuario_id: string;
+    contexto: ContextoDespesa;
+    forma_pagamento_id: string | null;
+    categoria_despesa_id: string;
+    descricao: string;
+    valor: number;
+    tipo_lancamento: TipoLancamentoDespesa;
+
+    data_vencimento: string | null;
+    paga: boolean;
+    data_pagamento: string | null;
+
+    dia_vencimento: number | null;
+    data_inicio: string | null;
+    data_fim: string | null;
+
+    numero_parcelas: number | null;
+    data_primeira_parcela: string | null;
+
+    forma_pagamento?: FormaPagamento;
+    categoria_despesa?: CategoriaDespesa;
 }
 
 export type Toast = {
