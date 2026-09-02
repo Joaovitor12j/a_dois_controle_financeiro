@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\CompetenciaCast;
 use App\Casts\MoneyCast;
+use App\Domain\ValueObjects\Competencia;
 use App\Domain\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property Money $valor
+ * @property Competencia|null $competencia
  */
 class Movimentacao extends Model
 {
@@ -22,6 +25,8 @@ class Movimentacao extends Model
         'forma_pagamento_id',
         'valor',
         'data',
+        'despesa_id',
+        'competencia',
         'fatura_id',
         'is_saldo_inicial',
     ];
@@ -32,6 +37,7 @@ class Movimentacao extends Model
         return [
             'valor' => MoneyCast::class,
             'data' => 'date',
+            'competencia' => CompetenciaCast::class,
             'is_saldo_inicial' => 'boolean',
         ];
     }
@@ -46,5 +52,11 @@ class Movimentacao extends Model
     public function fatura(): BelongsTo
     {
         return $this->belongsTo(Fatura::class);
+    }
+
+    /** @return BelongsTo<Despesa, $this> */
+    public function despesa(): BelongsTo
+    {
+        return $this->belongsTo(Despesa::class);
     }
 }

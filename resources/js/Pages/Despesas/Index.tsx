@@ -3,9 +3,11 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import type { CategoriaDespesa, Despesa, FormaPagamento } from '@/types';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
+import ConfirmarDesfazerPagamento from './Partials/ConfirmarDesfazerPagamento';
 import ConfirmarExclusaoDespesa from './Partials/ConfirmarExclusaoDespesa';
 import FormularioDespesa from './Partials/FormularioDespesa';
 import ItemDespesa from './Partials/ItemDespesa';
+import MarcarComoPagaDespesa from './Partials/MarcarComoPagaDespesa';
 
 interface AlvoDeFormulario {
     aberto: boolean;
@@ -19,6 +21,11 @@ interface AlvoDeExclusao {
 
 const formularioFechado: AlvoDeFormulario = { aberto: false, despesa: null };
 const exclusaoFechada: AlvoDeExclusao = { aberto: false, despesa: null };
+const marcarComoPagaFechado: AlvoDeExclusao = { aberto: false, despesa: null };
+const desfazerPagamentoFechado: AlvoDeExclusao = {
+    aberto: false,
+    despesa: null,
+};
 
 export default function Index({
     despesas,
@@ -32,6 +39,12 @@ export default function Index({
     const [formulario, setFormulario] =
         useState<AlvoDeFormulario>(formularioFechado);
     const [exclusao, setExclusao] = useState<AlvoDeExclusao>(exclusaoFechada);
+    const [marcarComoPaga, setMarcarComoPaga] = useState<AlvoDeExclusao>(
+        marcarComoPagaFechado,
+    );
+    const [desfazerPagamento, setDesfazerPagamento] = useState<AlvoDeExclusao>(
+        desfazerPagamentoFechado,
+    );
     const [aberturas, setAberturas] = useState(0);
 
     const abrirFormulario = (despesa: Despesa | null) => {
@@ -44,6 +57,12 @@ export default function Index({
 
     const fecharExclusao = () =>
         setExclusao((atual) => ({ ...atual, aberto: false }));
+
+    const fecharMarcarComoPaga = () =>
+        setMarcarComoPaga((atual) => ({ ...atual, aberto: false }));
+
+    const fecharDesfazerPagamento = () =>
+        setDesfazerPagamento((atual) => ({ ...atual, aberto: false }));
 
     return (
         <AuthenticatedLayout
@@ -58,8 +77,8 @@ export default function Index({
                             {despesas.length === 0
                                 ? 'Nenhuma despesa ainda'
                                 : despesas.length === 1
-                                  ? '1 despesa cadastrada'
-                                  : `${despesas.length} despesas cadastradas`}
+                                  ? '1 despesa lançada'
+                                  : `${despesas.length} despesas lançadas`}
                         </p>
                     </div>
 
@@ -113,6 +132,18 @@ export default function Index({
                                 aoExcluir={() =>
                                     setExclusao({ aberto: true, despesa })
                                 }
+                                aoMarcarComoPaga={() =>
+                                    setMarcarComoPaga({
+                                        aberto: true,
+                                        despesa,
+                                    })
+                                }
+                                aoDesfazerPagamento={() =>
+                                    setDesfazerPagamento({
+                                        aberto: true,
+                                        despesa,
+                                    })
+                                }
                             />
                         ))}
                     </div>
@@ -132,6 +163,19 @@ export default function Index({
                 despesa={exclusao.despesa}
                 aberto={exclusao.aberto}
                 aoFechar={fecharExclusao}
+            />
+
+            <MarcarComoPagaDespesa
+                despesa={marcarComoPaga.despesa}
+                formasPagamento={formasPagamento}
+                aberto={marcarComoPaga.aberto}
+                aoFechar={fecharMarcarComoPaga}
+            />
+
+            <ConfirmarDesfazerPagamento
+                despesa={desfazerPagamento.despesa}
+                aberto={desfazerPagamento.aberto}
+                aoFechar={fecharDesfazerPagamento}
             />
         </AuthenticatedLayout>
     );

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property Money $valor
@@ -34,8 +35,6 @@ class Despesa extends Model
         'valor',
         'tipo_lancamento',
         'data_vencimento',
-        'paga',
-        'data_pagamento',
         'dia_vencimento',
         'data_inicio',
         'data_fim',
@@ -50,9 +49,7 @@ class Despesa extends Model
             'valor' => MoneyCast::class,
             'tipo_lancamento' => TipoLancamentoDespesa::class,
             'contexto' => ContextoDespesa::class,
-            'paga' => 'boolean',
             'data_vencimento' => 'date',
-            'data_pagamento' => 'date',
             'data_inicio' => 'date',
             'data_fim' => 'date',
             'data_primeira_parcela' => 'date',
@@ -75,6 +72,12 @@ class Despesa extends Model
     public function categoriaDespesa(): BelongsTo
     {
         return $this->belongsTo(CategoriaDespesa::class);
+    }
+
+    /** @return HasMany<Movimentacao, $this> */
+    public function movimentacoes(): HasMany
+    {
+        return $this->hasMany(Movimentacao::class);
     }
 
     public function ehUnica(): bool

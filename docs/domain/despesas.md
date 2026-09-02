@@ -42,9 +42,7 @@ Uma despesa tem um tipo de lançamento: **única**, **mensal** ou
 
 Despesa **única** tem uma data de vencimento, obrigatória, e não tem dia de
 vencimento, data de início, data de fim, número de parcelas nem data da
-primeira parcela — esses campos são proibidos para esse tipo. Ver Pagamento,
-abaixo, para a origem do valor de `data_vencimento` quando a despesa já nasce
-paga.
+primeira parcela — esses campos são proibidos para esse tipo.
 
 Despesa **mensal** tem um dia de vencimento (entre 1 e 31) e uma data de
 início, ambos obrigatórios. A data de início representa o mês de início do
@@ -52,9 +50,7 @@ lançamento, não um dia específico — é sempre registrada como o primeiro di
 do mês, mesmo que a intenção seja apenas identificar mês e ano. A data de fim
 é opcional e, quando informada, não pode ser anterior à data de início. Não
 tem data de vencimento, forma de pagamento, número de parcelas nem data da
-primeira parcela — esses campos são proibidos para esse tipo. Despesa mensal
-não é paga diretamente: não se aplica o conceito de "paga" à despesa em si
-(ver Pagamento, abaixo).
+primeira parcela — esses campos são proibidos para esse tipo.
 
 Despesa **parcelada** tem uma forma de pagamento, um número de parcelas
 (maior que zero) e uma data da primeira parcela, todos obrigatórios. Não tem
@@ -65,46 +61,39 @@ e não é garantida no banco, é validação de aplicação.
 
 ## Pagamento
 
-O conceito de "paga" só se aplica a despesa **única**. Ela cobre dois casos de
-uso sob o mesmo modelo: uma conta a pagar (boleto, conta de consumo) — nasce
-não paga, com `data_vencimento` real — e um gasto pontual já ocorrido (ex.:
-compra no mercado) — nasce diretamente como já paga, sem vencimento no
-sentido estrito.
+Pagamento não é um atributo da despesa. É representado por uma
+**movimentação** vinculada à despesa por competência (mês) — ver
+[movimentacoes.md](movimentacoes.md) e
+[ADR 0012](../adr/0012-pagamento-de-despesa-como-movimentacao.md). Uma
+despesa nunca guarda status, data ou forma de pagamento em si; esses dados
+vivem só na movimentação correspondente.
 
-Uma despesa única pode nascer não paga (com `data_vencimento`, sem
-`data_pagamento` nem `forma_pagamento_id` obrigatórios) ou já paga na criação
-(com `data_pagamento` e `forma_pagamento_id` obrigatórios). Nesse segundo
-caso, não existe formulário de vencimento — `data_vencimento` continua
-obrigatória no schema, mas é preenchida automaticamente com a mesma data de
-`data_pagamento`; não é um dado pedido ao usuário nem um conceito exposto
-separadamente.
+Cada tipo de lançamento mapeia numa ou várias competências possíveis:
 
-Enquanto não paga, a data de pagamento não é preenchida, mas a forma de
-pagamento pode ser informada com antecedência (ex.: já se sabe como a
-despesa será paga antes do pagamento efetivo) — só não é obrigatória.
+- Despesa **única** tem uma única competência possível, derivada da própria
+  despesa.
+- Despesa **mensal** tem uma competência por mês do intervalo entre
+  `data_inicio` e `data_fim` (ou em aberto, se `data_fim` não estiver
+  definida).
+- Despesa **parcelada** tem uma competência por parcela, a partir de
+  `data_primeira_parcela`.
 
-Marcar como paga e desfazer pagamento são ações próprias, distintas da edição
-geral da despesa: a edição geral não altera o status de pagamento depois que
-a despesa é criada — só as duas ações dedicadas fazem isso. Marcar como paga
-exige forma de pagamento e data de pagamento nesse momento; só se aplica a
-despesa única ainda não paga. Desfazer pagamento limpa os três campos de
-pagamento; só se aplica a despesa única já paga.
+Uma despesa está paga numa competência quando existe uma movimentação com
+esse `despesa_id` e essa `competencia` — nunca mais que uma por combinação
+(ver índice único em [movimentacoes.md](movimentacoes.md)).
 
-Despesa mensal e despesa parcelada não têm o conceito de "paga" no cadastro
-da despesa em si — o pagamento de cada ocorrência/parcela é uma questão em
-aberto (ver abaixo).
+`forma_pagamento_id` deixa de existir em despesa única e despesa mensal.
+Continua existindo, exclusivamente, em despesa **parcelada** — mas ali não é
+mais dado de pagamento: é o cartão da compra, atributo genuíno da despesa,
+presente desde a criação e independente de qualquer parcela estar paga.
+
+Encerrar uma despesa mensal (definir ou antecipar `data_fim`) é bloqueado
+quando a nova data cai antes de uma competência já paga — não é possível
+encerrar retroativamente um período que já teve pagamento registrado. Essa
+validação é de aplicação, não de banco.
 
 ## Questões em aberto
 
-- **Geração de ocorrências de despesa mensal.** Este documento cobre apenas o
-  cadastro da despesa — a forma como uma despesa mensal gera ocorrências ao
-  longo do tempo ainda não foi redesenhada. É a mesma lacuna já aberta em
-  [rendas.md](rendas.md) para renda mensal (geração de movimentações a partir
-  de recorrência); o mecanismo, quando definido, deve valer para os dois
-  domínios, não ser resolvido separadamente.
-- **Marcação de pagamento por ocorrência/parcela.** Decorre da questão
-  anterior: sem ocorrência definida, não há onde registrar o pagamento de uma
-  parcela de despesa parcelada ou de um mês específico de despesa mensal.
 - **Relação entre parcelamento e fatura.** Uma despesa parcelada paga em
   cartão de crédito presumivelmente se relaciona com fatura, mas fatura
   ainda não foi redesenhada neste ciclo.
@@ -121,5 +110,8 @@ Implementado em:
 `database/migrations/2026_08_31_000008_add_foreign_key_despesa_id_to_movimentacoes_table.php`,
 `database/migrations/2026_08_31_000009_fix_despesas_pagamento_check_constraint.php`,
 `database/migrations/2026_09_02_000001_add_despesas_data_inicio_primeiro_dia_check.php`,
-`app/Models/Despesa.php`, `app/Services/Financeiro/DespesaService.php`,
+`database/migrations/2026_09_02_000002_remove_pagamento_from_despesas_table.php`,
+`database/migrations/2026_09_02_000003_add_competencia_to_movimentacoes_table.php`,
+`app/Models/Despesa.php`, `app/Models/Movimentacao.php`,
+`app/Services/Financeiro/DespesaService.php`,
 `app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`.

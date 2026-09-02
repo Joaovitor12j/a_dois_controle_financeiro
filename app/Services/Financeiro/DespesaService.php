@@ -14,7 +14,7 @@ final class DespesaService
     public function listar(): Collection
     {
         return Despesa::query()
-            ->with(['formaPagamento', 'categoriaDespesa'])
+            ->with(['formaPagamento.conta.usuario', 'categoriaDespesa'])
             ->orderByDesc('created_at')
             ->get();
     }
@@ -25,7 +25,6 @@ final class DespesaService
         return CategoriaDespesa::query()->orderBy('nome')->get();
     }
 
-    /** @return \Illuminate\Support\Collection */
     public function formasPagamentoDisponiveis(): \Illuminate\Support\Collection
     {
         return FormaPagamento::query()

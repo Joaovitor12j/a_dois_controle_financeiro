@@ -132,10 +132,14 @@ export default function ItemDespesa({
     despesa,
     aoEditar,
     aoExcluir,
+    aoMarcarComoPaga,
+    aoDesfazerPagamento,
 }: {
     despesa: Despesa;
     aoEditar: () => void;
     aoExcluir: () => void;
+    aoMarcarComoPaga: () => void;
+    aoDesfazerPagamento: () => void;
 }) {
     return (
         <article className="flex flex-col gap-3 rounded-xl border border-tinta/10 bg-white p-5 shadow-sm shadow-tinta/5">
@@ -194,14 +198,10 @@ export default function ItemDespesa({
 
                     <div>
                         <dt className="text-xs text-tinta-claro">
-                            {despesa.paga ? 'Pagamento' : 'Vencimento'}
+                            Vencimento
                         </dt>
                         <dd className="text-sm font-medium text-tinta">
-                            {formatarData(
-                                despesa.paga
-                                    ? despesa.data_pagamento
-                                    : despesa.data_vencimento,
-                            ) ?? '—'}
+                            {formatarData(despesa.data_vencimento) ?? '—'}
                         </dd>
                     </div>
 
@@ -219,8 +219,77 @@ export default function ItemDespesa({
                             </span>
                         </dd>
                     </div>
+
+                    {despesa.paga && (
+                        <div>
+                            <dt className="text-xs text-tinta-claro">
+                                Pagamento
+                            </dt>
+                            <dd className="text-sm font-medium text-tinta">
+                                {formatarData(despesa.data_pagamento) ?? '—'}
+                            </dd>
+                        </div>
+                    )}
+
+                    {despesa.paga && despesa.forma_pagamento && (
+                        <div>
+                            <dt className="text-xs text-tinta-claro">
+                                Forma de pagamento
+                            </dt>
+                            <dd className="text-sm font-medium text-tinta">
+                                {despesa.forma_pagamento.nome}
+                            </dd>
+                        </div>
+                    )}
+
+                    {despesa.paga &&
+                        despesa.forma_pagamento?.conta?.usuario && (
+                            <div>
+                                <dt className="text-xs text-tinta-claro">
+                                    Pago por
+                                </dt>
+                                <dd className="text-sm font-medium text-tinta">
+                                    {
+                                        despesa.forma_pagamento.conta.usuario
+                                            .nome
+                                    }
+                                </dd>
+                            </div>
+                        )}
+
+                    {!despesa.paga &&
+                        despesa.forma_pagamento_id &&
+                        despesa.forma_pagamento && (
+                            <div>
+                                <dt className="text-xs text-tinta-claro">
+                                    Forma de pagamento prevista
+                                </dt>
+                                <dd className="text-sm font-medium text-tinta">
+                                    {despesa.forma_pagamento.nome}
+                                </dd>
+                            </div>
+                        )}
                 </dl>
             )}
+
+            {despesa.tipo_lancamento === 'unica' &&
+                (despesa.paga ? (
+                    <button
+                        type="button"
+                        onClick={aoDesfazerPagamento}
+                        className="rounded-lg border border-tinta/15 px-3 py-1.5 text-sm font-medium text-tinta-claro transition-colors hover:bg-papel hover:text-tinta"
+                    >
+                        Desfazer pagamento
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={aoMarcarComoPaga}
+                        className="rounded-lg bg-verde/10 px-3 py-1.5 text-sm font-medium text-verde-escuro transition-colors hover:bg-verde/20"
+                    >
+                        Marcar como paga
+                    </button>
+                ))}
 
             {despesa.tipo_lancamento === 'mensal' && (
                 <dl className="grid grid-cols-3 gap-3 border-t border-tinta/10 pt-3">
@@ -284,6 +353,20 @@ export default function ItemDespesa({
                                 {despesa.forma_pagamento?.nome ?? '—'}
                             </dd>
                         </div>
+
+                        {despesa.forma_pagamento?.conta?.usuario && (
+                            <div>
+                                <dt className="text-xs text-tinta-claro">
+                                    Cartão de
+                                </dt>
+                                <dd className="text-sm font-medium text-tinta">
+                                    {
+                                        despesa.forma_pagamento.conta.usuario
+                                            .nome
+                                    }
+                                </dd>
+                            </div>
+                        )}
                     </dl>
                 )}
         </article>

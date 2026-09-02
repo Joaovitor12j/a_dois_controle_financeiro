@@ -49,6 +49,7 @@ conjunta não deve ser tratada como individual.
 | Formas de pagamento | [formas-pagamento.md](formas-pagamento.md) |
 | Rendas | [rendas.md](rendas.md) |
 | Despesas | [despesas.md](despesas.md) |
+| Movimentações | [movimentacoes.md](movimentacoes.md) |
 
 ## Estado do redesenho
 
