@@ -68,6 +68,13 @@ Enquanto não paga, a data de pagamento não é preenchida, mas a forma de
 pagamento pode ser informada com antecedência (ex.: já se sabe como a
 despesa será paga antes do pagamento efetivo) — só não é obrigatória.
 
+Marcar como paga e desfazer pagamento são ações próprias, distintas da edição
+geral da despesa: a edição geral não altera o status de pagamento depois que
+a despesa é criada — só as duas ações dedicadas fazem isso. Marcar como paga
+exige forma de pagamento e data de pagamento nesse momento; só se aplica a
+despesa única ainda não paga. Desfazer pagamento limpa os três campos de
+pagamento; só se aplica a despesa única já paga.
+
 Despesa mensal e despesa parcelada não têm o conceito de "paga" no cadastro
 da despesa em si — o pagamento de cada ocorrência/parcela é uma questão em
 aberto (ver abaixo).
@@ -97,4 +104,6 @@ Implementado em:
 `database/migrations/2026_08_31_000006_create_categorias_despesa_table.php`,
 `database/migrations/2026_08_31_000007_create_despesas_table.php`,
 `database/migrations/2026_08_31_000008_add_foreign_key_despesa_id_to_movimentacoes_table.php`,
-`database/migrations/2026_08_31_000009_fix_despesas_pagamento_check_constraint.php`.
+`database/migrations/2026_08_31_000009_fix_despesas_pagamento_check_constraint.php`,
+`app/Models/Despesa.php`, `app/Services/Financeiro/DespesaService.php`,
+`app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`.

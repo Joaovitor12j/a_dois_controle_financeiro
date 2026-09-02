@@ -36,9 +36,9 @@ class StoreDespesaRequest extends FormRequest
             ],
             'data_pagamento' => [
                 'nullable',
-                'required_if:paga,1',
-                'prohibited_unless:tipo_lancamento,unica',
-                'prohibited_unless:paga,1',
+                Rule::requiredIf(fn () => $this->boolean('paga')),
+                Rule::prohibitedIf(fn () => $this->input('tipo_lancamento') !== TipoLancamentoDespesa::Unica->value
+                    || ! $this->boolean('paga')),
                 'date',
             ],
             'forma_pagamento_id' => [

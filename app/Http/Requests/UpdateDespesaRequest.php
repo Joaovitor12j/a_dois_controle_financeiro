@@ -32,15 +32,10 @@ class UpdateDespesaRequest extends FormRequest
             'tipo_lancamento' => ['prohibited'],
 
             'data_vencimento' => [$ehUnica, 'date'],
-            'paga' => [$ehUnica, 'boolean'],
-            'data_pagamento' => $tipoLancamento === TipoLancamentoDespesa::Unica
-                ? ['nullable', 'required_if:paga,1', 'prohibited_unless:paga,1', 'date']
-                : ['prohibited'],
-            'forma_pagamento_id' => match ($tipoLancamento) {
-                TipoLancamentoDespesa::Mensal => ['prohibited'],
-                TipoLancamentoDespesa::Parcelada => ['required', 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at')],
-                TipoLancamentoDespesa::Unica => ['nullable', 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'), 'required_if:paga,1'],
-            },
+            'forma_pagamento_id' => [
+                'nullable', 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),
+                $tipoLancamento === TipoLancamentoDespesa::Parcelada ? 'required' : 'prohibited',
+            ],
 
             'dia_vencimento' => [$ehMensal, 'integer', 'between:1,31'],
             'data_inicio' => [$ehMensal, 'date'],
