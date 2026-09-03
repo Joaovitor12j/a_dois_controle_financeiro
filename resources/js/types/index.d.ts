@@ -118,10 +118,13 @@ export interface Despesa {
     categoria_despesa?: CategoriaDespesa;
 }
 
+export type StatusDespesa = 'vencida' | 'pendente' | 'paga';
+
 export interface OcorrenciaDespesa {
     despesa: Despesa;
     competencia: string;
     paga: boolean;
+    status: StatusDespesa;
     numero_parcela: number | null;
     movimentacao: Movimentacao | null;
 }
