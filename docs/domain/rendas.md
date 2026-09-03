@@ -45,11 +45,42 @@ uma data de início, ambos obrigatórios, e não tem data de recebimento — ess
 campo é proibido para esse tipo. A data de fim é opcional e, quando
 informada, não pode ser anterior à data de início.
 
+## Recebimento
+
+Recebimento não é um atributo da renda. É representado por uma
+**movimentação** vinculada à renda por competência (mês) — ver
+[movimentacoes.md](movimentacoes.md#recebimento-de-renda) e
+[ADR 0014](../adr/0014-renda-usa-forma-de-pagamento-designada-da-conta.md). Uma
+renda nunca guarda status, data ou forma de pagamento em si; esses dados vivem
+só na movimentação correspondente.
+
+Renda **única** tem uma única competência possível, derivada da própria
+renda. Renda **mensal** tem uma competência por mês do intervalo entre
+`data_inicio` e `data_fim` (ou em aberto, se `data_fim` não estiver definida)
+— mesmo mecanismo já usado para despesa mensal.
+
+Uma renda está recebida numa competência quando existe uma movimentação com
+esse `renda_id` e essa `competencia` — nunca mais que uma por combinação (ver
+índice único em [movimentacoes.md](movimentacoes.md)).
+
+O valor recebido é informado no momento do recebimento, pré-preenchido com o
+valor programado da renda mas editável — pode divergir do programado (ex.:
+salário com desconto diferente do previsto, freela pago a menos). O valor da
+renda em si não muda; só o valor da movimentação daquela competência reflete
+o que foi efetivamente recebido.
+
+A forma de pagamento usada no recebimento não é escolhida no momento do
+evento — é derivada da(s) forma(s) de pagamento da conta da renda marcadas
+como `recebe_renda` (ver [formas-pagamento.md](formas-pagamento.md)):
+automática se existir só uma elegível, perguntada ao usuário se existir mais
+de uma, recusada se não existir nenhuma.
+
+Encerrar uma renda mensal (definir ou antecipar `data_fim`) é bloqueado
+quando a nova data cai antes de uma competência já recebida — mesma regra já
+existente para despesa mensal. Essa validação é de aplicação, não de banco.
+
 ## Questões em aberto
 
-- **Geração de movimentações a partir de renda recorrente.** Este documento
-  cobre apenas o cadastro da renda — a forma como uma renda mensal gera
-  movimentações ao longo do tempo ainda não foi redesenhada.
 - **Categoria de renda.** Ainda não tem documento de domínio próprio; suas
   regras (quem pode criar/editar categorias, se é compartilhada entre os dois
   usuários) não estão definidas.
@@ -57,7 +88,19 @@ informada, não pode ser anterior à data de início.
 ---
 
 Implementado em: `app/Models/Renda.php`,
+`app/Models/Movimentacao.php`,
+`app/Models/FormaPagamento.php`,
 `app/Services/Financeiro/RendaService.php`,
 `app/Policies/RendaPolicy.php`,
 `app/Http/Controllers/RendaController.php`,
-`database/migrations/2026_08_31_000002_create_rendas_table.php`.
+`app/Http/Requests/MarcarComoRecebidaRendaRequest.php`,
+`app/Http/Requests/DesfazerRecebimentoRendaRequest.php`,
+`app/Domain/Financeiro/CalculadoraOcorrenciaRenda.php`,
+`resources/js/Pages/Rendas/Index.tsx`,
+`resources/js/Pages/Rendas/Partials/ItemOcorrenciaRenda.tsx`,
+`resources/js/Pages/Rendas/Partials/MarcarComoRecebidaRenda.tsx`,
+`resources/js/Pages/Rendas/Partials/ConfirmarDesfazerRecebimento.tsx`,
+`database/migrations/2026_08_31_000002_create_rendas_table.php`,
+`database/migrations/2026_08_31_000003_add_foreign_key_renda_id_to_movimentacoes_table.php`,
+`database/migrations/2026_09_02_000004_add_recebe_renda_to_formas_pagamento_table.php`,
+`database/migrations/2026_09_02_000005_generalize_movimentacoes_competencia_check_para_renda.php`.

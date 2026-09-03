@@ -2,8 +2,10 @@
 
 namespace App\Services\Financeiro;
 
+use App\Domain\ValueObjects\Competencia;
 use App\Models\CategoriaRenda;
 use App\Models\Conta;
+use App\Models\Movimentacao;
 use App\Models\Renda;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -51,5 +53,28 @@ final class RendaService
     public function excluir(Renda $renda): void
     {
         $renda->delete();
+    }
+
+    public function marcarComoRecebida(
+        Renda $renda,
+        Competencia $competencia,
+        ?string $formaPagamentoId,
+        string $dataRecebimento,
+        int $valor,
+    ): Movimentacao {
+        $elegiveis = $renda->formasPagamentoElegiveisParaRecebimento();
+
+        return Movimentacao::create([
+            'forma_pagamento_id' => $elegiveis->count() === 1 ? $elegiveis->first()->id : $formaPagamentoId,
+            'valor' => $valor,
+            'data' => $dataRecebimento,
+            'renda_id' => $renda->id,
+            'competencia' => $competencia->paraData(),
+        ]);
+    }
+
+    public function desfazerRecebimento(Renda $renda, Competencia $competencia): void
+    {
+        $renda->movimentacoes()->where('competencia', $competencia->paraData())->delete();
     }
 }

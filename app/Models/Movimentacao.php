@@ -26,6 +26,7 @@ class Movimentacao extends Model
         'valor',
         'data',
         'despesa_id',
+        'renda_id',
         'competencia',
         'fatura_id',
         'is_saldo_inicial',
@@ -58,5 +59,11 @@ class Movimentacao extends Model
     public function despesa(): BelongsTo
     {
         return $this->belongsTo(Despesa::class);
+    }
+
+    /** @return BelongsTo<Renda, $this> */
+    public function renda(): BelongsTo
+    {
+        return $this->belongsTo(Renda::class);
     }
 }

@@ -27,6 +27,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('formas-pagamento', FormaPagamentoController::class)
         ->except(['index', 'create', 'edit', 'show'])
         ->parameters(['formas-pagamento' => 'formaPagamento']);
+    Route::patch('rendas/{renda}/marcar-como-recebida', [RendaController::class, 'marcarComoRecebida'])
+        ->name('rendas.marcar-como-recebida');
+    Route::patch('rendas/{renda}/desfazer-recebimento', [RendaController::class, 'desfazerRecebimento'])
+        ->name('rendas.desfazer-recebimento');
     Route::resource('rendas', RendaController::class)->except(['create', 'edit', 'show']);
 
     Route::patch('despesas/{despesa}/marcar-como-paga', [DespesaController::class, 'marcarComoPaga'])

@@ -24,6 +24,7 @@ class FormaPagamento extends Model
         'conta_id',
         'nome',
         'tipo',
+        'recebe_renda',
     ];
 
     /** @return array<string, string> */
@@ -31,6 +32,7 @@ class FormaPagamento extends Model
     {
         return [
             'tipo' => TipoFormaPagamento::class,
+            'recebe_renda' => 'boolean',
         ];
     }
 

@@ -75,6 +75,16 @@ e saldo inicial opcional — sem dados próprios adicionais. A diferença para
 os demais tipos é só o rótulo usado para classificar esse meio, para que o
 usuário identifique esse tipo de recebimento separadamente na conta.
 
+## Recebimento de renda
+
+Uma forma de pagamento pode ser marcada como receptora de renda
+(`recebe_renda`) — ver [rendas.md](rendas.md#recebimento) e
+[ADR 0014](../adr/0014-renda-usa-forma-de-pagamento-designada-da-conta.md).
+Não se aplica ao tipo crédito: dinheiro não entra num cartão de crédito. Não
+há limite de quantas formas de uma mesma conta podem ser marcadas — uma conta
+pode ter mais de uma (ex.: vale-alimentação e auxílio home office na mesma
+conta, saldos independentes).
+
 ## Exclusão
 
 A exclusão de uma forma de pagamento é lógica, seguindo a mesma regra geral
@@ -106,4 +116,5 @@ Implementado em: `app/Models/FormaPagamento.php`, `app/Models/CartaoCredito.php`
 `app/Http/Controllers/FormaPagamentoController.php`,
 `database/migrations/2026_08_29_000002_create_formas_pagamento_table.php`,
 `database/migrations/2026_08_31_000005_recriar_cartoes_credito_como_extensao_forma_pagamento.php`,
-`database/migrations/2026_09_01_000001_add_vale_beneficio_to_tipo_forma_pagamento_enum.php`.
+`database/migrations/2026_09_01_000001_add_vale_beneficio_to_tipo_forma_pagamento_enum.php`,
+`database/migrations/2026_09_02_000004_add_recebe_renda_to_formas_pagamento_table.php`.

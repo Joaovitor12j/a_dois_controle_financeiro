@@ -32,6 +32,7 @@ class MarcarComoPagaDespesaRequest extends FormRequest
         return [
             'competencia' => ['required', 'date_format:Y-m'],
             'forma_pagamento_id' => [
+                'nullable',
                 Rule::prohibitedIf(fn () => $despesa->ehParcelada()),
                 Rule::requiredIf(fn () => ! $despesa->ehParcelada()),
                 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),

@@ -95,6 +95,53 @@ it('exige data quando informa saldo inicial', function () {
     expect(FormaPagamento::count())->toBe(0);
 });
 
+it('cria forma de pagamento marcada como receptora de renda', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Nubank');
+
+    $this->actingAs($eu)
+        ->post(route('formas-pagamento.store'), [
+            'conta_id' => $conta->id,
+            'nome' => 'Conta corrente',
+            'tipo' => 'pix',
+            'recebe_renda' => true,
+        ])
+        ->assertRedirect(route('contas.index'));
+
+    expect(FormaPagamento::sole()->recebe_renda)->toBeTrue();
+});
+
+it('rejeita recebe_renda em forma de pagamento do tipo crédito', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Nubank');
+
+    $this->actingAs($eu)
+        ->post(route('formas-pagamento.store'), [
+            'conta_id' => $conta->id,
+            'nome' => 'Nubank Roxinho',
+            'tipo' => 'credito',
+            'recebe_renda' => true,
+            'limite_total' => 500000,
+            'dia_fechamento' => 10,
+            'dia_vencimento' => 17,
+        ])
+        ->assertSessionHasErrors('recebe_renda');
+
+    expect(FormaPagamento::count())->toBe(0);
+});
+
+it('alterna recebe_renda ao atualizar a própria forma de pagamento', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Nubank');
+    $forma = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Débito', 'tipo' => 'debito']);
+
+    $this->actingAs($eu)
+        ->put(route('formas-pagamento.update', $forma), ['nome' => 'Débito', 'recebe_renda' => true])
+        ->assertRedirect(route('contas.index'));
+
+    expect($forma->fresh()?->recebe_renda)->toBeTrue();
+});
+
 it('atualiza a própria forma de pagamento', function () {
     $eu = Usuario::factory()->create();
     $conta = contaComDonoDe($eu, 'Nubank');

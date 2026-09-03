@@ -20,6 +20,7 @@ final class FormaPagamentoService
                 'conta_id' => $atributos['conta_id'],
                 'nome' => $atributos['nome'],
                 'tipo' => $atributos['tipo'],
+                'recebe_renda' => $atributos['recebe_renda'] ?? false,
             ]);
 
             if ($formaPagamento->ehCredito()) {
@@ -46,7 +47,10 @@ final class FormaPagamentoService
     /** @param array<string, mixed> $atributos */
     public function atualizar(FormaPagamento $formaPagamento, array $atributos): FormaPagamento
     {
-        $formaPagamento->update(['nome' => $atributos['nome']]);
+        $formaPagamento->update([
+            'nome' => $atributos['nome'],
+            'recebe_renda' => $atributos['recebe_renda'] ?? false,
+        ]);
 
         if ($formaPagamento->ehCredito()) {
             $formaPagamento->cartaoCredito->update([

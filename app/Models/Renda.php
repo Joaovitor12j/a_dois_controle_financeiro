@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * @property Money $valor
@@ -71,5 +72,13 @@ class Renda extends Model
     public function movimentacoes(): HasMany
     {
         return $this->hasMany(Movimentacao::class);
+    }
+
+    /** @return Collection<int, FormaPagamento> */
+    public function formasPagamentoElegiveisParaRecebimento(): Collection
+    {
+        return FormaPagamento::where('conta_id', $this->conta_id)
+            ->where('recebe_renda', true)
+            ->get();
     }
 }

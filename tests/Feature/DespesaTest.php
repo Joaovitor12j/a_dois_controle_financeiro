@@ -876,6 +876,7 @@ it('marca despesa parcelada como paga sem pedir forma_pagamento_id, usando a do 
     $this->actingAs($eu)
         ->patch(route('despesas.marcar-como-paga', $despesa), [
             'competencia' => '2026-09',
+            'forma_pagamento_id' => '',
             'data_pagamento' => '2026-09-15',
         ])
         ->assertRedirect(route('despesas.index'));

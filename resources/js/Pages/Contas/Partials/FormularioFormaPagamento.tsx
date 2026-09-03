@@ -1,3 +1,4 @@
+import Checkbox from '@/Components/Checkbox';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -59,6 +60,7 @@ export default function FormularioFormaPagamento({
         conta_id: contaId ?? '',
         nome: formaPagamento?.nome ?? '',
         tipo: formaPagamento?.tipo ?? ('debito' as TipoFormaPagamento),
+        recebe_renda: formaPagamento?.recebe_renda ?? false,
         saldo_inicial: '',
         data_saldo_inicial: '',
         limite_total: formaPagamento?.cartao_credito
@@ -77,6 +79,7 @@ export default function FormularioFormaPagamento({
 
     transform((dados) => ({
         ...dados,
+        recebe_renda: dados.tipo === 'credito' ? null : dados.recebe_renda,
         saldo_inicial: paraCentavos(dados.saldo_inicial),
         limite_total: paraCentavos(dados.limite_total),
         limite_usado_abertura: paraCentavos(dados.limite_usado_abertura),
@@ -172,6 +175,37 @@ export default function FormularioFormaPagamento({
                         </>
                     )}
                 </div>
+
+                {!ehCredito && (
+                    <div className="mt-4">
+                        <label className="flex items-center gap-2">
+                            <Checkbox
+                                id="recebe_renda"
+                                checked={data.recebe_renda}
+                                onChange={(evento) =>
+                                    setData(
+                                        'recebe_renda',
+                                        evento.target.checked,
+                                    )
+                                }
+                            />
+
+                            <span className="text-sm text-tinta">
+                                Recebe renda
+                            </span>
+                        </label>
+
+                        <p className="mt-1 text-xs text-tinta-claro">
+                            Marque para que esta forma de pagamento possa ser
+                            usada para receber renda nesta conta.
+                        </p>
+
+                        <InputError
+                            className="mt-2"
+                            message={errors.recebe_renda}
+                        />
+                    </div>
+                )}
 
                 {!formaPagamento && !ehCredito && (
                     <>

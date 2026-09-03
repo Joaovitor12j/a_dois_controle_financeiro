@@ -29,6 +29,7 @@ export interface FormaPagamento {
     conta_id: string;
     nome: string;
     tipo: TipoFormaPagamento;
+    recebe_renda: boolean;
     saldo_inicial: Movimentacao | null;
     cartao_credito: CartaoCredito | null;
     conta?: { id: string; nome: string; usuario?: { nome: string } };
@@ -73,6 +74,14 @@ export interface Renda {
     data_fim: string | null;
     conta: ContaResumo;
     categoria_renda: CategoriaRenda;
+}
+
+export interface OcorrenciaRenda {
+    renda: Renda;
+    competencia: string;
+    recebida: boolean;
+    movimentacao: Movimentacao | null;
+    formas_pagamento_elegiveis: FormaPagamento[];
 }
 
 export type TipoLancamentoDespesa = 'unica' | 'mensal' | 'parcelada';

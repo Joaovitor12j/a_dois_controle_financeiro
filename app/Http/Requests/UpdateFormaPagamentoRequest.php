@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\FormaPagamento;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateFormaPagamentoRequest extends FormRequest
 {
@@ -23,6 +24,7 @@ class UpdateFormaPagamentoRequest extends FormRequest
         return [
             'nome' => ['required', 'string', 'max:255'],
             'tipo' => ['prohibited'],
+            'recebe_renda' => ['nullable', 'boolean', Rule::prohibitedIf($formaPagamento->ehCredito())],
             'limite_total' => [$ehCredito, 'nullable', 'integer', 'min:0'],
             'dia_fechamento' => [$ehCredito, 'nullable', 'integer', 'between:1,31'],
             'dia_vencimento' => [$ehCredito, 'nullable', 'integer', 'between:1,31'],
