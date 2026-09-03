@@ -47,6 +47,7 @@ conjunta não deve ser tratada como individual.
 | --- | --- |
 | Contas | [contas.md](contas.md) |
 | Formas de pagamento | [formas-pagamento.md](formas-pagamento.md) |
+| Categorias | [categorias.md](categorias.md) |
 | Rendas | [rendas.md](rendas.md) |
 | Despesas | [despesas.md](despesas.md) |
 | Movimentações | [movimentacoes.md](movimentacoes.md) |

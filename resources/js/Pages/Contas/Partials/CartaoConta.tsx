@@ -387,7 +387,7 @@ function LinhaFormaPagamento({
             {formaPagamento.recebe_renda && <BadgeRecebeRenda />}
 
             {formaPagamento.cartao_credito && (
-                <dl className="mt-2 grid grid-cols-2 gap-3">
+                <dl className="mt-2 grid grid-cols-3 gap-3">
                     <div>
                         <dt className="text-xs text-tinta-claro">Limite</dt>
                         <dd className="text-sm font-medium tabular-nums text-tinta">
@@ -406,6 +406,20 @@ function LinhaFormaPagamento({
                             {formatadorDeMoeda.format(
                                 formaPagamento.cartao_credito
                                     .limite_usado_abertura / 100,
+                            )}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-xs text-tinta-claro">
+                            Disponível
+                        </dt>
+                        <dd className="text-sm font-medium tabular-nums text-vinho-escuro">
+                            {formatadorDeMoeda.format(
+                                (formaPagamento.cartao_credito.limite_total -
+                                    formaPagamento.cartao_credito
+                                        .limite_usado_abertura) /
+                                    100,
                             )}
                         </dd>
                     </div>
@@ -433,8 +447,15 @@ export default function CartaoConta({
     aoExcluirFormaPagamento: (formaPagamento: FormaPagamento) => void;
 }) {
     const contaVazia = conta.formas_pagamento.length === 0;
-    const formasElegiveis = conta.formas_pagamento.filter(
-        (formaPagamento) => formaPagamento.tipo !== 'credito',
+    const cartoesCredito = conta.formas_pagamento.filter(
+        (formaPagamento) => formaPagamento.cartao_credito !== null,
+    );
+    const limiteDisponivel = cartoesCredito.reduce(
+        (total, formaPagamento) =>
+            total +
+            (formaPagamento.cartao_credito!.limite_total -
+                formaPagamento.cartao_credito!.limite_usado_abertura),
+        0,
     );
     const recebendoRenda = conta.formas_pagamento.filter(
         (formaPagamento) => formaPagamento.recebe_renda,
@@ -470,7 +491,7 @@ export default function CartaoConta({
                     <div className="mt-3.5 flex items-end justify-between gap-3">
                         <div>
                             <p className="text-[10.5px] font-semibold uppercase tracking-wide text-tinta-claro">
-                                Saldo total
+                                Saldo total em conta
                             </p>
                             <p
                                 className={`mt-0.5 font-display text-2xl font-bold leading-tight tabular-nums ${corSaldoTotal(conta.saldo_total)}`}
@@ -481,10 +502,17 @@ export default function CartaoConta({
                             </p>
                         </div>
 
-                        {formasElegiveis.length === 0 && (
-                            <span className="text-[11.5px] text-tinta-claro/70">
-                                só crédito — não soma
-                            </span>
+                        {cartoesCredito.length > 0 && (
+                            <div className="text-right">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-tinta-claro">
+                                    Limite disponível
+                                </p>
+                                <p className="mt-0.5 font-display text-2xl font-bold leading-tight tabular-nums text-vinho-escuro">
+                                    {formatadorDeMoeda.format(
+                                        limiteDisponivel / 100,
+                                    )}
+                                </p>
+                            </div>
                         )}
                     </div>
                 )}

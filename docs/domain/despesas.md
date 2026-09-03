@@ -31,9 +31,9 @@ Para despesa parcelada, o valor representa a parcela, não o total — o total
 
 ## Categoria
 
-Toda despesa pertence a uma categoria de despesa, obrigatória. A categoria de
-despesa é uma entidade compartilhada entre os usuários, não um dado por conta
-ou por usuário — mesmo modelo de categoria de renda.
+Toda despesa pertence a uma categoria de despesa, obrigatória. Regras da
+categoria em si (propriedade, identificação, aparência, exclusão) estão em
+[categorias.md](categorias.md).
 
 ## Natureza do lançamento
 
@@ -106,10 +106,6 @@ competências pagas após criadas, pela ação dedicada de marcar como paga.
 - **Relação entre parcelamento e fatura.** Uma despesa parcelada paga em
   cartão de crédito presumivelmente se relaciona com fatura, mas fatura
   ainda não foi redesenhada neste ciclo.
-- **Categoria de despesa.** Ainda não tem documento de domínio próprio; suas
-  regras (quem pode criar/editar categorias, se é compartilhada entre os dois
-  usuários) não estão definidas — mesma lacuna aberta para categoria de
-  renda.
 
 ---
 

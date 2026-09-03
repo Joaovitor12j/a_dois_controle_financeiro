@@ -94,6 +94,27 @@ export default function Index({ contas }: { contas: Conta[] }) {
         (total, conta) => total + conta.saldo_total,
         0,
     );
+    const cartoesCreditoTotais = contas.reduce(
+        (total, conta) =>
+            total +
+            conta.formas_pagamento.filter((fp) => fp.cartao_credito !== null)
+                .length,
+        0,
+    );
+    const limiteDisponivelGeral = contas.reduce(
+        (total, conta) =>
+            total +
+            conta.formas_pagamento.reduce(
+                (subtotal, fp) =>
+                    subtotal +
+                    (fp.cartao_credito
+                        ? fp.cartao_credito.limite_total -
+                          fp.cartao_credito.limite_usado_abertura
+                        : 0),
+                0,
+            ),
+        0,
+    );
 
     return (
         <AuthenticatedLayout
@@ -113,30 +134,54 @@ export default function Index({ contas }: { contas: Conta[] }) {
                         </p>
 
                         {contas.length > 0 && (
-                            <div className="mt-3.5">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-tinta-claro">
-                                    Saldo geral
-                                </p>
+                            <div className="mt-3.5 flex flex-wrap items-start gap-8">
+                                <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-tinta-claro">
+                                        Saldo geral em contas
+                                    </p>
 
-                                <p
-                                    className={`mt-1 font-display text-3xl font-bold leading-tight tabular-nums ${
-                                        saldoGeral < 0
-                                            ? 'text-vinho'
-                                            : 'text-verde'
-                                    }`}
-                                >
-                                    {formatadorDeMoeda.format(
-                                        saldoGeral / 100,
-                                    )}
-                                </p>
+                                    <p
+                                        className={`mt-1 font-display text-3xl font-bold leading-tight tabular-nums ${
+                                            saldoGeral < 0
+                                                ? 'text-vinho'
+                                                : 'text-verde'
+                                        }`}
+                                    >
+                                        {formatadorDeMoeda.format(
+                                            saldoGeral / 100,
+                                        )}
+                                    </p>
 
-                                <p className="mt-1 text-xs text-tinta-claro/70">
-                                    Soma de {formasElegiveisTotais}{' '}
-                                    {formasElegiveisTotais === 1
-                                        ? 'forma de pagamento'
-                                        : 'formas de pagamento'}{' '}
-                                    — crédito não entra.
-                                </p>
+                                    <p className="mt-1 text-xs text-tinta-claro/70">
+                                        Soma de {formasElegiveisTotais}{' '}
+                                        {formasElegiveisTotais === 1
+                                            ? 'conta'
+                                            : 'contas'}{' '}
+                                        — (débito, dinheiro, pix, vale, benefícios).
+                                    </p>
+                                </div>
+
+                                {cartoesCreditoTotais > 0 && (
+                                    <div>
+                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-tinta-claro">
+                                            Limite disponível
+                                        </p>
+
+                                        <p className="mt-1 font-display text-3xl font-bold leading-tight tabular-nums text-vinho-escuro">
+                                            {formatadorDeMoeda.format(
+                                                limiteDisponivelGeral / 100,
+                                            )}
+                                        </p>
+
+                                        <p className="mt-1 text-xs text-tinta-claro/70">
+                                            Soma de {cartoesCreditoTotais}{' '}
+                                            {cartoesCreditoTotais === 1
+                                                ? 'cartão de crédito'
+                                                : 'cartões de crédito'}
+                                            .
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

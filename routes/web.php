@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\CategoriaDespesaController;
+use App\Http\Controllers\CategoriaRendaController;
 use App\Http\Controllers\ContaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DespesaController;
@@ -23,6 +26,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/categorias', [CategoriaController::class, 'index'])->name('categorias.index');
+    Route::resource('categorias-renda', CategoriaRendaController::class)
+        ->except(['index', 'create', 'edit', 'show'])
+        ->parameters(['categorias-renda' => 'categoriaRenda']);
+    Route::resource('categorias-despesa', CategoriaDespesaController::class)
+        ->except(['index', 'create', 'edit', 'show'])
+        ->parameters(['categorias-despesa' => 'categoriaDespesa']);
+
     Route::resource('contas', ContaController::class)->except(['create', 'edit', 'show']);
     Route::resource('formas-pagamento', FormaPagamentoController::class)
         ->except(['index', 'create', 'edit', 'show'])

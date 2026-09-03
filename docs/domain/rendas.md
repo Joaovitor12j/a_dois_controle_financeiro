@@ -28,9 +28,9 @@ Uma renda tem um valor, obrigatório, em centavos, e sempre maior que zero.
 
 ## Categoria
 
-Toda renda pertence a uma categoria de renda, obrigatória. A categoria de
-renda é uma entidade compartilhada entre os usuários, não um dado por conta
-ou por usuário.
+Toda renda pertence a uma categoria de renda, obrigatória. Regras da
+categoria em si (propriedade, identificação, aparência, exclusão) estão em
+[categorias.md](categorias.md).
 
 ## Recorrência
 
@@ -81,9 +81,7 @@ existente para despesa mensal. Essa validação é de aplicação, não de banco
 
 ## Questões em aberto
 
-- **Categoria de renda.** Ainda não tem documento de domínio próprio; suas
-  regras (quem pode criar/editar categorias, se é compartilhada entre os dois
-  usuários) não estão definidas.
+Nenhuma no momento.
 
 ---
 
