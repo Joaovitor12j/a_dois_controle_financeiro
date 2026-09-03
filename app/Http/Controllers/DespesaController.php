@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Financeiro\CalculadoraCompetenciaDespesa;
 use App\Domain\ValueObjects\Competencia;
+use App\Enums\ContextoDespesa;
 use App\Http\Requests\DesfazerPagamentoDespesaRequest;
 use App\Http\Requests\MarcarComoPagaDespesaRequest;
 use App\Http\Requests\StoreDespesaRequest;
@@ -14,7 +15,9 @@ use App\Models\Despesa;
 use App\Models\FormaPagamento;
 use App\Models\Scopes\DonoScope;
 use App\Services\Financeiro\DespesaService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,11 +29,19 @@ class DespesaController extends Controller
         private readonly CalculadoraCompetenciaDespesa $calculadora,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $this->authorize('viewAny', Despesa::class);
 
-        $competencia = Competencia::deData(now());
+        $competencia = $request->has(['ano', 'mes'])
+            ? Competencia::deAnoMes((int) $request->query('ano'), (int) $request->query('mes'))
+            : Competencia::deData(now());
+
+        $contexto = $request->query('contexto') === 'individual'
+            ? ContextoDespesa::Individual
+            : ContextoDespesa::Conjunta;
+
+        $hoje = Carbon::today();
 
         $ocorrencias = Despesa::with([
             'formaPagamento' => fn ($query) => $query->withTrashed(),
@@ -41,17 +52,27 @@ class DespesaController extends Controller
             'movimentacoes.formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
             'movimentacoes.formaPagamento.conta.usuario',
         ])
+            ->where('contexto', $contexto->value)
             ->get()
             ->filter(fn (Despesa $despesa) => $this->calculadora->existeNaCompetencia($despesa, $competencia))
-            ->map(function (Despesa $despesa) use ($competencia) {
+            ->map(function (Despesa $despesa) use ($competencia, $hoje) {
                 $movimentacao = $despesa->movimentacoes->first(
                     fn ($m) => $m->competencia->equals($competencia)
                 );
+                $paga = $movimentacao !== null;
+
+                $status = match (true) {
+                    $despesa->ehParcelada() => $paga ? 'paga' : 'pendente',
+                    $paga => 'paga',
+                    $this->calculadora->vencimento($despesa, $competencia)->lt($hoje) => 'vencida',
+                    default => 'pendente',
+                };
 
                 return [
                     'despesa' => $despesa,
                     'competencia' => (string) $competencia,
-                    'paga' => $movimentacao !== null,
+                    'paga' => $paga,
+                    'status' => $status,
                     'numero_parcela' => $despesa->ehParcelada()
                         ? $this->calculadora->numeroParcela($despesa, $competencia)
                         : null,
@@ -63,6 +84,7 @@ class DespesaController extends Controller
         return Inertia::render('Despesas/Index', [
             'ocorrencias' => $ocorrencias,
             'competencia' => (string) $competencia,
+            'contexto' => $contexto->value,
             'categoriasDespesa' => CategoriaDespesa::orderBy('nome')->get(),
             'formasPagamento' => FormaPagamento::whereIn('conta_id', Conta::pluck('id'))
                 ->with(['cartaoCredito', 'conta:id,nome'])

@@ -1063,6 +1063,133 @@ it('resolve o cartão de uma despesa parcelada criada pelo parceiro', function (
     Carbon::setTestNow();
 });
 
+it('marca despesa única como vencida quando o vencimento já passou sem pagamento, e pendente quando ainda não chegou', function () {
+    Carbon::setTestNow('2026-08-15');
+
+    $eu = Usuario::factory()->create();
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Vencida', 'contexto' => 'conjunta', 'data_vencimento' => '2026-08-10']);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'A vencer', 'contexto' => 'conjunta', 'data_vencimento' => '2026-08-20']);
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->component('Despesas/Index')
+            ->has('ocorrencias', 2)
+            ->where('ocorrencias.0.status', 'vencida')
+            ->where('ocorrencias.1.status', 'pendente')
+        );
+
+    Carbon::setTestNow();
+});
+
+it('despesa única e mensal ficam pagas quando há movimentação na competência', function () {
+    Carbon::setTestNow('2026-08-15');
+
+    $eu = Usuario::factory()->create();
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    $conta = contaDoUsuarioDespesa($eu);
+    $forma = formaPagamentoDespesa($conta);
+
+    $paga = criarDespesaUnica($eu, $categoria, ['contexto' => 'conjunta', 'data_vencimento' => '2026-08-05']);
+    criarMovimentacaoDespesa($paga, $forma, '2026-08');
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->component('Despesas/Index')
+            ->where('ocorrencias.0.status', 'paga')
+        );
+
+    Carbon::setTestNow();
+});
+
+it('despesa parcelada nunca fica vencida, mesmo com o dia da parcela já passado no mês', function () {
+    Carbon::setTestNow('2026-09-25');
+
+    $eu = Usuario::factory()->create();
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    $conta = contaDoUsuarioDespesa($eu);
+    $cartao = formaPagamentoDespesa($conta, 'credito', 'Cartão');
+    cartaoCreditoDespesa($cartao);
+
+    criarDespesaParcelada($eu, $categoria, $cartao, ['contexto' => 'conjunta', 'data_primeira_parcela' => '2026-09-01']);
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->component('Despesas/Index')
+            ->where('ocorrencias.0.status', 'pendente')
+        );
+
+    Carbon::setTestNow();
+});
+
+it('filtra despesa por contexto: individual só traz despesa individual do usuário, conjunta só traz despesa conjunta', function () {
+    Carbon::setTestNow('2026-08-15');
+
+    $eu = Usuario::factory()->create();
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Individual', 'contexto' => 'individual', 'data_vencimento' => '2026-08-10']);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta', 'data_vencimento' => '2026-08-10']);
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index', ['contexto' => 'individual']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('contexto', 'individual')
+            ->has('ocorrencias', 1)
+            ->where('ocorrencias.0.despesa.descricao', 'Individual')
+        );
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('contexto', 'conjunta')
+            ->has('ocorrencias', 1)
+            ->where('ocorrencias.0.despesa.descricao', 'Conjunta')
+        );
+
+    Carbon::setTestNow();
+});
+
+it('navega para outra competência via mes/ano e resolve a ocorrência do período informado', function () {
+    $eu = Usuario::factory()->create();
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    criarDespesaMensal($eu, $categoria, ['contexto' => 'conjunta', 'dia_vencimento' => 10, 'data_inicio' => '2026-01-01']);
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index', ['ano' => 2026, 'mes' => 3]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('competencia', '2026-03')
+            ->has('ocorrencias', 1)
+            ->where('ocorrencias.0.competencia', '2026-03')
+        );
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index', ['ano' => 2025, 'mes' => 12]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('competencia', '2025-12')
+            ->has('ocorrencias', 0)
+        );
+});
+
 // Policy
 
 it('nega a policy sobre despesa individual do parceiro e permite sobre despesa conjunta', function () {

@@ -296,13 +296,7 @@ final class DashboardService
 
     private function vencimentoDespesa(Despesa $despesa, Competencia $competencia): string
     {
-        if ($despesa->tipo_lancamento === TipoLancamentoDespesa::Unica) {
-            return Carbon::parse($despesa->data_vencimento)->toDateString();
-        }
-
-        $ultimoDia = Carbon::create($competencia->ano, $competencia->mes, 1)->daysInMonth;
-
-        return Carbon::create($competencia->ano, $competencia->mes, min($despesa->dia_vencimento, $ultimoDia))->toDateString();
+        return $this->calculadoraDespesa->vencimento($despesa, $competencia)->toDateString();
     }
 
     private function dataOcorrenciaRenda(Renda $renda, Competencia $competencia): string

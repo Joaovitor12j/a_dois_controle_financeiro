@@ -31,6 +31,19 @@ final class CalculadoraCompetenciaDespesa
         return null;
     }
 
+    public function vencimento(Despesa $despesa, Competencia $competencia): Carbon
+    {
+        return match ($despesa->tipo_lancamento) {
+            TipoLancamentoDespesa::Unica => Carbon::parse($despesa->data_vencimento),
+            TipoLancamentoDespesa::Mensal => Carbon::create(
+                $competencia->ano,
+                $competencia->mes,
+                min($despesa->dia_vencimento, Carbon::create($competencia->ano, $competencia->mes, 1)->daysInMonth),
+            ),
+            TipoLancamentoDespesa::Parcelada => throw new \LogicException('Despesa parcelada não tem vencimento — o dado pertence à fatura.'),
+        };
+    }
+
     public function competenciaPrimeiraParcela(Despesa $despesa): Competencia
     {
         $diaFechamento = $despesa->formaPagamento->cartaoCredito->dia_fechamento;
