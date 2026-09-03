@@ -13,7 +13,10 @@ final class ContaService
     public function listar(): Collection
     {
         return Conta::query()
-            ->with(['formasPagamento.saldoInicial', 'formasPagamento.cartaoCredito'])
+            ->with([
+                'formasPagamento' => fn ($query) => $query->withSum('movimentacoes', 'valor'),
+                'formasPagamento.cartaoCredito',
+            ])
             ->orderBy('nome')
             ->get();
     }

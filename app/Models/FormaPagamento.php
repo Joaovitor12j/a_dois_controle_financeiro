@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Domain\ValueObjects\Money;
 use App\Enums\TipoFormaPagamento;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +28,9 @@ class FormaPagamento extends Model
         'tipo',
         'recebe_renda',
     ];
+
+    /** @var list<string> */
+    protected $appends = ['saldo'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -63,5 +68,19 @@ class FormaPagamento extends Model
     public function ehCredito(): bool
     {
         return $this->tipo === TipoFormaPagamento::Credito;
+    }
+
+    /** @return Attribute<Money|null, never> */
+    protected function saldo(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->ehCredito() || ! array_key_exists('movimentacoes_sum_valor', $this->attributes)) {
+                    return null;
+                }
+
+                return Money::fromCents((int) $this->attributes['movimentacoes_sum_valor']);
+            },
+        );
     }
 }

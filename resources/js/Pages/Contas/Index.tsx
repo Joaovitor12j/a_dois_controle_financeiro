@@ -9,6 +9,11 @@ import ConfirmarExclusaoFormaPagamento from './Partials/ConfirmarExclusaoFormaPa
 import FormularioConta from './Partials/FormularioConta';
 import FormularioFormaPagamento from './Partials/FormularioFormaPagamento';
 
+const formatadorDeMoeda = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+});
+
 interface AlvoDeModal {
     aberto: boolean;
     conta: Conta | null;
@@ -78,6 +83,18 @@ export default function Index({ contas }: { contas: Conta[] }) {
     const fecharExclusaoFormaPagamento = () =>
         setExclusaoFormaPagamento((atual) => ({ ...atual, aberto: false }));
 
+    const formasElegiveisTotais = contas.reduce(
+        (total, conta) =>
+            total +
+            conta.formas_pagamento.filter((fp) => fp.tipo !== 'credito')
+                .length,
+        0,
+    );
+    const saldoGeral = contas.reduce(
+        (total, conta) => total + conta.saldo_total,
+        0,
+    );
+
     return (
         <AuthenticatedLayout
             header={
@@ -94,6 +111,34 @@ export default function Index({ contas }: { contas: Conta[] }) {
                                   ? '1 conta sua'
                                   : `${contas.length} contas suas`}
                         </p>
+
+                        {contas.length > 0 && (
+                            <div className="mt-3.5">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-tinta-claro">
+                                    Saldo geral
+                                </p>
+
+                                <p
+                                    className={`mt-1 font-display text-3xl font-bold leading-tight tabular-nums ${
+                                        saldoGeral < 0
+                                            ? 'text-vinho'
+                                            : 'text-verde'
+                                    }`}
+                                >
+                                    {formatadorDeMoeda.format(
+                                        saldoGeral / 100,
+                                    )}
+                                </p>
+
+                                <p className="mt-1 text-xs text-tinta-claro/70">
+                                    Soma de {formasElegiveisTotais}{' '}
+                                    {formasElegiveisTotais === 1
+                                        ? 'forma de pagamento'
+                                        : 'formas de pagamento'}{' '}
+                                    — crédito não entra.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {contas.length > 0 && (

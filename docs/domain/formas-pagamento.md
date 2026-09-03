@@ -43,6 +43,18 @@ depois que a forma de pagamento é criada.
 Saldo inicial não se aplica a forma de pagamento do tipo crédito — é
 proibido informá-lo nesse caso.
 
+## Saldo
+
+O saldo de uma forma de pagamento é uma leitura derivada, nunca um campo
+persistido ou editável: é a soma do valor de todas as suas movimentações
+(inclusive a de saldo inicial, quando existe). Não há operação que altere o
+saldo diretamente — ele muda só como consequência de uma movimentação nova
+(pagamento de despesa, recebimento de renda, saldo inicial).
+
+Não se aplica ao tipo crédito, pelo mesmo motivo de `recebe_renda`: crédito
+representa dívida potencial, não dinheiro disponível, e não entra em nenhuma
+soma de saldo.
+
 ## Crédito
 
 Uma forma de pagamento do tipo crédito tem limite e ciclo de fatura
@@ -112,8 +124,11 @@ visibilidade segue inteiramente a da forma de pagamento a que pertencem.
 
 Implementado em: `app/Models/FormaPagamento.php`, `app/Models/CartaoCredito.php`,
 `app/Services/Financeiro/FormaPagamentoService.php`,
+`app/Services/Financeiro/ContaService.php`,
 `app/Policies/FormaPagamentoPolicy.php`,
 `app/Http/Controllers/FormaPagamentoController.php`,
+`resources/js/Pages/Contas/Index.tsx`,
+`resources/js/Pages/Contas/Partials/CartaoConta.tsx`,
 `database/migrations/2026_08_29_000002_create_formas_pagamento_table.php`,
 `database/migrations/2026_08_31_000005_recriar_cartoes_credito_como_extensao_forma_pagamento.php`,
 `database/migrations/2026_09_01_000001_add_vale_beneficio_to_tipo_forma_pagamento_enum.php`,

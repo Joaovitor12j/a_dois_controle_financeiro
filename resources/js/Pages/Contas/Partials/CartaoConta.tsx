@@ -5,6 +5,7 @@ import {
     DisclosureButton,
     DisclosurePanel,
 } from '@headlessui/react';
+import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
 const formatadorDeMes = new Intl.DateTimeFormat('pt-BR', {
@@ -150,6 +151,96 @@ function BotaoAdicionar({
     );
 }
 
+function corValorForma(saldo: number): string {
+    if (saldo < 0) return 'text-vinho';
+    if (saldo === 0) return 'text-tinta-claro/70';
+    return 'text-tinta-claro';
+}
+
+function corSaldoTotal(saldo: number): string {
+    if (saldo < 0) return 'text-vinho';
+    if (saldo === 0) return 'text-tinta-claro/70';
+    return 'text-verde';
+}
+
+function alternarRecebeRenda(formaPagamento: FormaPagamento) {
+    router.put(
+        route('formas-pagamento.update', formaPagamento.id),
+        {
+            nome: formaPagamento.nome,
+            recebe_renda: !formaPagamento.recebe_renda,
+        },
+        { preserveScroll: true },
+    );
+}
+
+function BadgeRecebeRenda() {
+    return (
+        <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-verde-escuro/10 px-2 py-0.5 text-xs font-semibold text-verde-escuro">
+            <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-verde"
+            />
+            Recebe renda
+        </span>
+    );
+}
+
+function MenuFormaPagamento({
+    formaPagamento,
+}: {
+    formaPagamento: FormaPagamento;
+}) {
+    const ehCredito = formaPagamento.tipo === 'credito';
+
+    return (
+        <Dropdown>
+            <Dropdown.Trigger>
+                <button
+                    type="button"
+                    aria-label="Mais ações da forma de pagamento"
+                    title="Mais ações"
+                    className="shrink-0 rounded-lg p-1.5 text-tinta-claro transition duration-150 ease-in-out hover:bg-papel hover:text-tinta focus:outline-none focus:ring-2 focus:ring-ouro"
+                >
+                    <svg
+                        aria-hidden="true"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                    >
+                        <circle cx="10" cy="4.5" r="1.4" />
+                        <circle cx="10" cy="10" r="1.4" />
+                        <circle cx="10" cy="15.5" r="1.4" />
+                    </svg>
+                </button>
+            </Dropdown.Trigger>
+
+            <Dropdown.Content align="right" contentClasses="py-1 bg-white">
+                <button
+                    type="button"
+                    disabled={ehCredito}
+                    onClick={() => alternarRecebeRenda(formaPagamento)}
+                    className={`block w-full px-4 py-2 text-start text-sm leading-5 transition duration-150 ease-in-out ${
+                        ehCredito
+                            ? 'cursor-not-allowed text-tinta/35'
+                            : 'text-tinta hover:bg-papel focus:bg-papel focus:outline-none'
+                    }`}
+                >
+                    {formaPagamento.recebe_renda
+                        ? 'Remover como recebe renda'
+                        : 'Marcar como recebe renda'}
+                </button>
+
+                <span className="block px-4 pb-1.5 pt-0.5 text-xs leading-snug text-tinta-claro">
+                    {ehCredito
+                        ? 'Crédito não recebe renda — é dívida potencial, não dinheiro disponível.'
+                        : 'Rendas marcadas como recebidas podem entrar nesta forma de pagamento.'}
+                </span>
+            </Dropdown.Content>
+        </Dropdown>
+    );
+}
+
 function ItemMenuConta({
     tom = 'padrao',
     onClick,
@@ -271,10 +362,12 @@ function LinhaFormaPagamento({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
-                    {formaPagamento.saldo_inicial && (
-                        <span className="mr-1 text-sm tabular-nums text-tinta-claro">
+                    {formaPagamento.saldo !== null && (
+                        <span
+                            className={`mr-1 text-sm font-medium tabular-nums ${corValorForma(formaPagamento.saldo)}`}
+                        >
                             {formatadorDeMoeda.format(
-                                formaPagamento.saldo_inicial.valor / 100,
+                                formaPagamento.saldo / 100,
                             )}
                         </span>
                     )}
@@ -287,8 +380,11 @@ function LinhaFormaPagamento({
                         rotulo="Excluir forma de pagamento"
                         aoClicar={aoExcluir}
                     />
+                    <MenuFormaPagamento formaPagamento={formaPagamento} />
                 </div>
             </div>
+
+            {formaPagamento.recebe_renda && <BadgeRecebeRenda />}
 
             {formaPagamento.cartao_credito && (
                 <dl className="mt-2 grid grid-cols-2 gap-3">
@@ -337,23 +433,61 @@ export default function CartaoConta({
     aoExcluirFormaPagamento: (formaPagamento: FormaPagamento) => void;
 }) {
     const contaVazia = conta.formas_pagamento.length === 0;
+    const formasElegiveis = conta.formas_pagamento.filter(
+        (formaPagamento) => formaPagamento.tipo !== 'credito',
+    );
+    const recebendoRenda = conta.formas_pagamento.filter(
+        (formaPagamento) => formaPagamento.recebe_renda,
+    ).length;
 
     return (
         <article className="flex flex-col self-start rounded-xl border border-tinta/10 bg-white shadow-sm shadow-tinta/5 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-tinta/20 hover:shadow-lg hover:shadow-tinta/5 motion-reduce:transform-none motion-reduce:transition-none">
-            <div className="flex items-start gap-4 p-5">
-                <AvatarConta nome={conta.nome} logoUrl={conta.logo_url} cor={cor} />
+            <div className="p-5">
+                <div className="flex items-start gap-4">
+                    <AvatarConta
+                        nome={conta.nome}
+                        logoUrl={conta.logo_url}
+                        cor={cor}
+                    />
 
-                <div className="min-w-0 flex-1">
-                    <h2 className="truncate font-display text-xl font-semibold text-tinta">
-                        {conta.nome}
-                    </h2>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="truncate font-display text-xl font-semibold text-tinta">
+                            {conta.nome}
+                        </h2>
 
-                    <p className="mt-0.5 text-xs text-tinta-claro/70">
-                        aberta em {formatadorDeMes.format(new Date(conta.created_at))}
-                    </p>
+                        <p className="mt-0.5 text-xs text-tinta-claro/70">
+                            aberta em{' '}
+                            {formatadorDeMes.format(
+                                new Date(conta.created_at),
+                            )}
+                        </p>
+                    </div>
+
+                    <MenuConta aoRenomear={aoRenomear} aoExcluir={aoExcluir} />
                 </div>
 
-                <MenuConta aoRenomear={aoRenomear} aoExcluir={aoExcluir} />
+                {!contaVazia && (
+                    <div className="mt-3.5 flex items-end justify-between gap-3">
+                        <div>
+                            <p className="text-[10.5px] font-semibold uppercase tracking-wide text-tinta-claro">
+                                Saldo total
+                            </p>
+                            <p
+                                className={`mt-0.5 font-display text-2xl font-bold leading-tight tabular-nums ${corSaldoTotal(conta.saldo_total)}`}
+                            >
+                                {formatadorDeMoeda.format(
+                                    conta.saldo_total / 100,
+                                )}
+                            </p>
+                        </div>
+
+                        {formasElegiveis.length === 0 && (
+                            <span className="text-[11.5px] text-tinta-claro/70">
+                                só crédito — não soma
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
 
             {contaVazia ? (
@@ -378,7 +512,17 @@ export default function CartaoConta({
                                         {conta.formas_pagamento.length})
                                     </span>
 
-                                    <Seta aberta={open} />
+                                    <span className="flex shrink-0 items-center gap-2.5">
+                                        {recebendoRenda > 0 && (
+                                            <span className="text-[11.5px] font-medium text-verde-escuro">
+                                                {recebendoRenda === 1
+                                                    ? '1 recebe renda'
+                                                    : `${recebendoRenda} recebem renda`}
+                                            </span>
+                                        )}
+
+                                        <Seta aberta={open} />
+                                    </span>
                                 </DisclosureButton>
 
                                 <DisclosurePanel className="px-5 pb-4">

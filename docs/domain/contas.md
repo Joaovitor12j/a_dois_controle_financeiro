@@ -11,6 +11,10 @@ de crédito de um usuário.
 Uma conta não possui saldo próprio. Ela organiza os meios pelos quais o dinheiro
 entra e sai, não o dinheiro em si.
 
+O "saldo total" de uma conta, quando exibido, é uma leitura derivada — a soma do
+saldo (ver [formas-pagamento.md](formas-pagamento.md#saldo)) das suas formas de
+pagamento elegíveis, excluindo crédito. Não é um campo próprio da conta.
+
 ## Propriedade e visibilidade
 
 Toda conta pertence a exatamente um usuário.

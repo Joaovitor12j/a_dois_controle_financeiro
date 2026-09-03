@@ -5,6 +5,7 @@ use App\Enums\TipoFormaPagamento;
 use App\Models\CartaoCredito;
 use App\Models\Conta;
 use App\Models\FormaPagamento;
+use App\Models\Movimentacao;
 use App\Models\Scopes\DonoScope;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Auth;
@@ -44,6 +45,34 @@ it('ordena as contas por nome', function () {
     $this->actingAs($eu)
         ->get(route('contas.index'))
         ->assertInertia(fn (AssertableInertia $pagina) => $pagina->where('contas.0.nome', 'Bradesco'));
+});
+
+it('calcula o saldo total da conta como soma das formas de pagamento não crédito', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDe($eu, 'Nubank');
+
+    $debito = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Débito', 'tipo' => 'debito']);
+    Movimentacao::create([
+        'forma_pagamento_id' => $debito->id,
+        'valor' => 10000,
+        'data' => '2026-08-01',
+        'is_saldo_inicial' => true,
+    ]);
+    Movimentacao::create(['forma_pagamento_id' => $debito->id, 'valor' => -3000, 'data' => '2026-08-05']);
+
+    $credito = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Crédito', 'tipo' => 'credito']);
+    CartaoCredito::create([
+        'forma_pagamento_id' => $credito->id,
+        'limite_total' => 500000,
+        'dia_fechamento' => 10,
+        'dia_vencimento' => 17,
+    ]);
+
+    $this->actingAs($eu)
+        ->get(route('contas.index'))
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('contas.0.saldo_total', 7000)
+        );
 });
 
 it('grava a conta no usuário autenticado', function () {

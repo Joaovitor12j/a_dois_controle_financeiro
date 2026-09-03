@@ -142,6 +142,32 @@ it('alterna recebe_renda ao atualizar a própria forma de pagamento', function (
     expect($forma->fresh()?->recebe_renda)->toBeTrue();
 });
 
+it('expõe o saldo calculado da forma de pagamento e null para crédito', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaComDonoDe($eu, 'Nubank');
+
+    $debito = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Débito', 'tipo' => 'debito']);
+    Movimentacao::create(['forma_pagamento_id' => $debito->id, 'valor' => 5000, 'data' => '2026-08-01']);
+    Movimentacao::create(['forma_pagamento_id' => $debito->id, 'valor' => -1200, 'data' => '2026-08-10']);
+
+    $credito = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Crédito', 'tipo' => 'credito']);
+    CartaoCredito::create([
+        'forma_pagamento_id' => $credito->id,
+        'limite_total' => 500000,
+        'dia_fechamento' => 10,
+        'dia_vencimento' => 17,
+    ]);
+
+    $resposta = $this->actingAs($eu)->get(route('contas.index'));
+
+    /** @var array<int, array<string, mixed>> $formasPagamento */
+    $formasPagamento = $resposta->inertiaProps('contas.0.formas_pagamento');
+    $formas = collect($formasPagamento);
+
+    expect($formas->firstWhere('id', $debito->id)['saldo'])->toBe(3800)
+        ->and($formas->firstWhere('id', $credito->id)['saldo'])->toBeNull();
+});
+
 it('atualiza a própria forma de pagamento', function () {
     $eu = Usuario::factory()->create();
     $conta = contaComDonoDe($eu, 'Nubank');

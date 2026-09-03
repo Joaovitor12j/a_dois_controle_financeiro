@@ -30,7 +30,7 @@ export interface FormaPagamento {
     nome: string;
     tipo: TipoFormaPagamento;
     recebe_renda: boolean;
-    saldo_inicial: Movimentacao | null;
+    saldo: number | null;
     cartao_credito: CartaoCredito | null;
     conta?: { id: string; nome: string; usuario?: { nome: string } };
 }
@@ -40,6 +40,7 @@ export interface Conta {
     usuario_id: string;
     nome: string;
     logo_url: string;
+    saldo_total: number;
     created_at: string;
     updated_at: string;
     formas_pagamento: FormaPagamento[];
