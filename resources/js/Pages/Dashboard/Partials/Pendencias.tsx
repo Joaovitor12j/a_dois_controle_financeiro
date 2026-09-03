@@ -1,5 +1,5 @@
 import { formatarMoeda } from '@/lib/money';
-import type { PendenciaDespesaItem } from '@/types';
+import type { PendenciaItem } from '@/types';
 
 function formatarData(data: string): string {
     const [ano, mes, dia] = data.split('-');
@@ -7,12 +7,40 @@ function formatarData(data: string): string {
     return `${dia}/${mes}`;
 }
 
-export default function Pendencias({
-    pendencias,
+function TotalPorTipo({
+    rotulo,
+    valor,
+    cor,
 }: {
-    pendencias: PendenciaDespesaItem[];
+    rotulo: string;
+    valor: number;
+    cor: 'vinho' | 'verde';
 }) {
-    const total = pendencias.reduce((soma, item) => soma + item.valor, 0);
+    return (
+        <div className="flex items-baseline justify-between">
+            <p
+                className={`text-[11px] font-semibold uppercase tracking-wider ${
+                    cor === 'vinho' ? 'text-vinho' : 'text-verde'
+                }`}
+            >
+                {rotulo}
+            </p>
+            <span
+                className={`text-sm font-semibold tabular-nums ${
+                    cor === 'vinho' ? 'text-vinho' : 'text-verde'
+                }`}
+            >
+                {formatarMoeda(valor)}
+            </span>
+        </div>
+    );
+}
+
+export default function Pendencias({ pendencias }: { pendencias: PendenciaItem[] }) {
+    const despesas = pendencias.filter((item) => item.tipo === 'despesa');
+    const rendas = pendencias.filter((item) => item.tipo === 'renda');
+    const totalDespesas = despesas.reduce((soma, item) => soma + item.valor, 0);
+    const totalRendas = rendas.reduce((soma, item) => soma + item.valor, 0);
 
     return (
         <div className="rounded-xl border border-tinta/10 bg-white">
@@ -33,46 +61,51 @@ export default function Pendencias({
             </div>
 
             <div className="px-6 py-4">
-                <div className="flex items-baseline justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-vinho">
-                        Despesas a pagar
-                    </p>
-                    <span className="text-sm font-semibold tabular-nums text-vinho">
-                        {formatarMoeda(total)}
-                    </span>
+                <div className="flex flex-col gap-2">
+                    <TotalPorTipo rotulo="Despesas a pagar" valor={totalDespesas} cor="vinho" />
+                    <TotalPorTipo rotulo="Renda a receber" valor={totalRendas} cor="verde" />
                 </div>
 
                 {pendencias.length === 0 ? (
                     <p className="mt-3 text-sm text-tinta-claro">
-                        Nenhuma despesa pendente neste período.
+                        Nenhuma pendência neste período.
                     </p>
                 ) : (
                     <div className="mt-2.5 flex flex-col">
                         {pendencias.map((item) => (
                             <div
-                                key={item.id}
+                                key={`${item.tipo}-${item.id}`}
                                 className="flex items-center gap-3.5 border-t border-tinta/[0.08] py-2.5"
                             >
                                 <span
                                     aria-hidden="true"
-                                    className="h-7 w-[3px] shrink-0 rounded-full bg-vinho"
+                                    className={`h-7 w-[3px] shrink-0 rounded-full ${
+                                        item.tipo === 'renda' ? 'bg-verde' : 'bg-vinho'
+                                    }`}
                                 />
                                 <span className="flex-1 truncate text-sm font-medium text-tinta">
                                     {item.descricao}
                                 </span>
+                                {item.contexto !== null && (
+                                    <span
+                                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                            item.contexto === 'conjunta'
+                                                ? 'bg-ouro/20 text-ouro'
+                                                : 'bg-tinta/[0.07] text-tinta-claro'
+                                        }`}
+                                    >
+                                        {item.contexto === 'conjunta' ? 'Conjunta' : 'Individual'}
+                                    </span>
+                                )}
+                                <span className="w-24 shrink-0 text-right text-xs text-tinta-claro">
+                                    {item.tipo === 'renda' ? 'Recebe' : 'Vence'}{' '}
+                                    {formatarData(item.data)}
+                                </span>
                                 <span
-                                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                                        item.contexto === 'conjunta'
-                                            ? 'bg-ouro/20 text-ouro'
-                                            : 'bg-tinta/[0.07] text-tinta-claro'
+                                    className={`w-24 shrink-0 text-right text-sm font-semibold tabular-nums ${
+                                        item.tipo === 'renda' ? 'text-verde' : 'text-tinta'
                                     }`}
                                 >
-                                    {item.contexto === 'conjunta' ? 'Conjunta' : 'Individual'}
-                                </span>
-                                <span className="w-24 shrink-0 text-right text-xs text-tinta-claro">
-                                    Vence {formatarData(item.vencimento)}
-                                </span>
-                                <span className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums text-tinta">
                                     {formatarMoeda(item.valor)}
                                 </span>
                             </div>

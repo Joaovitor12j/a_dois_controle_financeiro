@@ -155,11 +155,12 @@ export interface CategoriaResumoItem {
     valor: number;
 }
 
-export interface PendenciaDespesaItem {
+export interface PendenciaItem {
     id: string;
+    tipo: 'despesa' | 'renda';
     descricao: string;
-    contexto: ContextoDespesa;
-    vencimento: string;
+    contexto: ContextoDespesa | null;
+    data: string;
     valor: number;
 }
 
@@ -190,7 +191,7 @@ export interface DashboardProps {
     serieSaldo: PontoSerieSaldo[];
     despesaPorCategoria: CategoriaResumoItem[];
     receitaPorCategoria: CategoriaResumoItem[];
-    pendencias: PendenciaDespesaItem[];
+    pendencias: PendenciaItem[];
     alertas: AlertaItem[];
     contribuicao: ContribuicaoPorPessoa | null;
     categoriasDespesa: CategoriaDespesa[];

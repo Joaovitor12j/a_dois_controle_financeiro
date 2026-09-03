@@ -33,9 +33,11 @@ class DespesaController extends Controller
         $competencia = Competencia::deData(now());
 
         $ocorrencias = Despesa::with([
+            'formaPagamento' => fn ($query) => $query->withTrashed(),
             'formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
             'formaPagamento.conta.usuario',
             'categoriaDespesa',
+            'movimentacoes.formaPagamento' => fn ($query) => $query->withTrashed(),
             'movimentacoes.formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
             'movimentacoes.formaPagamento.conta.usuario',
         ])

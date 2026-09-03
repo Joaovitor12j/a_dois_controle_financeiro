@@ -8,6 +8,7 @@ use App\Domain\ValueObjects\Competencia;
 use App\Domain\ValueObjects\Money;
 use App\Enums\ContextoDespesa;
 use App\Enums\TipoLancamentoDespesa;
+use App\Enums\TipoRecorrencia;
 use App\Models\Despesa;
 use App\Models\Renda;
 use App\Models\Scopes\DonoScope;
@@ -55,8 +56,8 @@ final class DashboardService
             'serieSaldo' => $atual['serie'],
             'despesaPorCategoria' => $this->agruparPorCategoriaDespesa($despesas),
             'receitaPorCategoria' => $this->agruparPorCategoriaRenda($rendas),
-            'pendencias' => $this->pendencias($despesas, $competencia),
-            'alertas' => $this->alertas($despesas, $competencia),
+            'pendencias' => $this->pendencias($despesas, $rendas, $competencia),
+            'alertas' => $this->alertas($despesas, $rendas, $competencia),
             'contribuicao' => $modo === 'casal' ? $this->contribuicaoPorPessoa($usuarios, $rendas, $despesas, $competencia) : null,
         ];
     }
@@ -84,7 +85,7 @@ final class DashboardService
             ? Renda::withoutGlobalScope(DonoScope::class)->whereIn('usuario_id', $usuarios->pluck('id'))
             : Renda::query();
 
-        return $query->with('categoriaRenda')
+        return $query->with(['categoriaRenda', 'movimentacoes'])
             ->get()
             ->filter(fn (Renda $renda) => $this->calculadoraRenda->existeNaCompetencia($renda, $competencia))
             ->values();
@@ -95,6 +96,7 @@ final class DashboardService
     {
         $despesas = Despesa::with([
             'categoriaDespesa',
+            'movimentacoes.formaPagamento' => fn ($query) => $query->withTrashed(),
             'movimentacoes.formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
         ])
             ->get()
@@ -107,9 +109,9 @@ final class DashboardService
         return $despesas->values();
     }
 
-    private function movimentacaoDaCompetencia(Despesa $despesa, Competencia $competencia): ?object
+    private function movimentacaoDaCompetencia(Despesa|Renda $entidade, Competencia $competencia): ?object
     {
-        return $despesa->movimentacoes->first(
+        return $entidade->movimentacoes->first(
             fn ($movimentacao) => $movimentacao->competencia?->equals($competencia)
         );
     }
@@ -131,10 +133,16 @@ final class DashboardService
         $projetados = [];
 
         foreach ($rendas as $renda) {
-            $dia = min($this->calculadoraRenda->diaDoEvento($renda), $ultimoDia);
-            $item = ['dia' => $dia, 'valor' => $renda->valor];
+            $movimentacao = $this->movimentacaoDaCompetencia($renda, $competencia);
 
-            $dia <= $corte ? $certos[] = $item : $projetados[] = $item;
+            if ($movimentacao !== null) {
+                $certos[] = ['dia' => min(Carbon::parse($movimentacao->data)->day, $ultimoDia), 'valor' => $renda->valor];
+
+                continue;
+            }
+
+            $dia = min($this->calculadoraRenda->diaDoEvento($renda), $ultimoDia);
+            $projetados[] = ['dia' => $dia, 'valor' => $renda->valor];
         }
 
         foreach ($despesas as $despesa) {
@@ -250,26 +258,43 @@ final class DashboardService
             ->all();
     }
 
-    /** @param Collection<int, Despesa> $despesas
-     * @return list<array{id: string, descricao: string, contexto: string, vencimento: string, valor: int}> */
-    private function pendencias(Collection $despesas, Competencia $competencia): array
+    /**
+     * @param  Collection<int, Despesa>  $despesas
+     * @param  Collection<int, Renda>  $rendas
+     * @return list<array{id: string, tipo: string, descricao: string, contexto: string|null, data: string, valor: int}>
+     */
+    private function pendencias(Collection $despesas, Collection $rendas, Competencia $competencia): array
     {
-        return $despesas
+        $itensDespesa = $despesas
             ->filter(fn (Despesa $d) => $d->tipo_lancamento !== TipoLancamentoDespesa::Parcelada)
             ->filter(fn (Despesa $d) => $this->movimentacaoDaCompetencia($d, $competencia) === null)
             ->map(fn (Despesa $d) => [
                 'id' => $d->id,
+                'tipo' => 'despesa',
                 'descricao' => $d->descricao,
                 'contexto' => $d->contexto->value,
-                'vencimento' => $this->vencimentoDaOcorrencia($d, $competencia),
+                'data' => $this->vencimentoDespesa($d, $competencia),
                 'valor' => $d->valor->cents,
-            ])
-            ->sortBy('vencimento')
+            ]);
+
+        $itensRenda = $rendas
+            ->filter(fn (Renda $r) => $this->movimentacaoDaCompetencia($r, $competencia) === null)
+            ->map(fn (Renda $r) => [
+                'id' => $r->id,
+                'tipo' => 'renda',
+                'descricao' => $r->descricao,
+                'contexto' => null,
+                'data' => $this->dataOcorrenciaRenda($r, $competencia),
+                'valor' => $r->valor->cents,
+            ]);
+
+        return $itensDespesa->concat($itensRenda)
+            ->sortBy('data')
             ->values()
             ->all();
     }
 
-    private function vencimentoDaOcorrencia(Despesa $despesa, Competencia $competencia): string
+    private function vencimentoDespesa(Despesa $despesa, Competencia $competencia): string
     {
         if ($despesa->tipo_lancamento === TipoLancamentoDespesa::Unica) {
             return Carbon::parse($despesa->data_vencimento)->toDateString();
@@ -280,24 +305,51 @@ final class DashboardService
         return Carbon::create($competencia->ano, $competencia->mes, min($despesa->dia_vencimento, $ultimoDia))->toDateString();
     }
 
-    /** @param Collection<int, Despesa> $despesas
-     * @return list<array{titulo: string, detalhe: string, valor: int, nivel: string}> */
-    private function alertas(Collection $despesas, Competencia $competencia): array
+    private function dataOcorrenciaRenda(Renda $renda, Competencia $competencia): string
+    {
+        if ($renda->tipo_recorrencia === TipoRecorrencia::Unica) {
+            return Carbon::parse($renda->data_recebimento)->toDateString();
+        }
+
+        $ultimoDia = Carbon::create($competencia->ano, $competencia->mes, 1)->daysInMonth;
+
+        return Carbon::create($competencia->ano, $competencia->mes, min($renda->dia_recebimento, $ultimoDia))->toDateString();
+    }
+
+    /**
+     * @param  Collection<int, Despesa>  $despesas
+     * @param  Collection<int, Renda>  $rendas
+     * @return list<array{titulo: string, detalhe: string, valor: int, nivel: string}>
+     */
+    private function alertas(Collection $despesas, Collection $rendas, Competencia $competencia): array
     {
         $hoje = Carbon::today();
 
-        return collect($this->pendencias($despesas, $competencia))
-            ->map(fn (array $item) => [...$item, 'dias' => $hoje->diffInDays(Carbon::parse($item['vencimento']), false)])
+        return collect($this->pendencias($despesas, $rendas, $competencia))
+            ->map(fn (array $item) => [...$item, 'dias' => $hoje->diffInDays(Carbon::parse($item['data']), false)])
             ->filter(fn (array $item) => $item['dias'] <= 7)
             ->sortBy('dias')
-            ->map(fn (array $item) => [
-                'titulo' => $item['dias'] < 0
-                    ? "{$item['descricao']} venceu há ".abs((int) $item['dias']).' dia(s)'
-                    : "{$item['descricao']} vence em {$item['dias']} dia(s)",
-                'detalhe' => ($item['contexto'] === ContextoDespesa::Conjunta->value ? 'Despesa conjunta' : 'Despesa individual').' · '.Carbon::parse($item['vencimento'])->format('d/m'),
-                'valor' => $item['valor'],
-                'nivel' => $item['dias'] < 0 || $item['dias'] <= 3 ? 'vinho' : 'ouro',
-            ])
+            ->map(function (array $item) {
+                $ehRenda = $item['tipo'] === 'renda';
+
+                $titulo = match (true) {
+                    $ehRenda && $item['dias'] < 0 => "{$item['descricao']} deveria ter sido recebida há ".abs((int) $item['dias']).' dia(s)',
+                    $ehRenda => "{$item['descricao']} a receber em {$item['dias']} dia(s)",
+                    $item['dias'] < 0 => "{$item['descricao']} venceu há ".abs((int) $item['dias']).' dia(s)',
+                    default => "{$item['descricao']} vence em {$item['dias']} dia(s)",
+                };
+
+                $detalhe = $ehRenda
+                    ? 'Renda a receber'
+                    : ($item['contexto'] === ContextoDespesa::Conjunta->value ? 'Despesa conjunta' : 'Despesa individual');
+
+                return [
+                    'titulo' => $titulo,
+                    'detalhe' => $detalhe.' · '.Carbon::parse($item['data'])->format('d/m'),
+                    'valor' => $item['valor'],
+                    'nivel' => $item['dias'] < 0 || $item['dias'] <= 3 ? 'vinho' : 'ouro',
+                ];
+            })
             ->values()
             ->all();
     }
@@ -310,7 +362,9 @@ final class DashboardService
      */
     private function contribuicaoPorPessoa(Collection $usuarios, Collection $rendas, Collection $despesas, Competencia $competencia): array
     {
-        $rendasPorUsuario = $rendas->groupBy('usuario_id');
+        $rendasRecebidasPorUsuario = $rendas
+            ->filter(fn (Renda $r) => $this->movimentacaoDaCompetencia($r, $competencia) !== null)
+            ->groupBy('usuario_id');
 
         $despesasPagasPorUsuario = $despesas
             ->map(fn (Despesa $d) => ['despesa' => $d, 'movimentacao' => $this->movimentacaoDaCompetencia($d, $competencia)])
@@ -322,7 +376,7 @@ final class DashboardService
                 'usuarioId' => $usuario->id,
                 'nome' => $usuario->nome,
                 'cor' => $usuario->cor,
-                'valor' => $rendasPorUsuario->get($usuario->id, collect())
+                'valor' => $rendasRecebidasPorUsuario->get($usuario->id, collect())
                     ->reduce(fn (Money $carry, Renda $r) => $carry->plus($r->valor), Money::zero())->cents,
             ])->all(),
             'despesa' => $usuarios->map(fn (Usuario $usuario) => [
