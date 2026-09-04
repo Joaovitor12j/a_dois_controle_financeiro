@@ -6,6 +6,7 @@ use App\Domain\Financeiro\CalculadoraCompetenciaDespesa;
 use App\Domain\ValueObjects\Competencia;
 use App\Enums\ContextoDespesa;
 use App\Http\Requests\DesfazerPagamentoDespesaRequest;
+use App\Http\Requests\FiltrosDespesaRequest;
 use App\Http\Requests\MarcarComoPagaDespesaRequest;
 use App\Http\Requests\StoreDespesaRequest;
 use App\Http\Requests\UpdateDespesaRequest;
@@ -13,11 +14,9 @@ use App\Models\CategoriaDespesa;
 use App\Models\Conta;
 use App\Models\Despesa;
 use App\Models\FormaPagamento;
-use App\Models\Scopes\DonoScope;
 use App\Services\Financeiro\DespesaService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +28,7 @@ class DespesaController extends Controller
         private readonly CalculadoraCompetenciaDespesa $calculadora,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(FiltrosDespesaRequest $request): Response
     {
         $this->authorize('viewAny', Despesa::class);
 
@@ -42,19 +41,9 @@ class DespesaController extends Controller
             : ContextoDespesa::Conjunta;
 
         $hoje = Carbon::today();
+        $filtros = $request->validated();
 
-        $ocorrencias = Despesa::with([
-            'formaPagamento' => fn ($query) => $query->withTrashed(),
-            'formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
-            'formaPagamento.conta.usuario',
-            'categoriaDespesa',
-            'movimentacoes.formaPagamento' => fn ($query) => $query->withTrashed(),
-            'movimentacoes.formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
-            'movimentacoes.formaPagamento.conta.usuario',
-        ])
-            ->where('contexto', $contexto->value)
-            ->get()
-            ->filter(fn (Despesa $despesa) => $this->calculadora->existeNaCompetencia($despesa, $competencia))
+        $ocorrencias = $this->despesas->listarNoPeriodo($competencia, $contexto, $filtros)
             ->map(function (Despesa $despesa) use ($competencia, $hoje) {
                 $movimentacao = $despesa->movimentacoes->first(
                     fn ($m) => $m->competencia->equals($competencia)
@@ -85,12 +74,14 @@ class DespesaController extends Controller
             'ocorrencias' => $ocorrencias,
             'competencia' => (string) $competencia,
             'contexto' => $contexto->value,
+            'filtros' => $filtros,
             'categoriasDespesa' => CategoriaDespesa::orderBy('nome')->get(),
             'formasPagamento' => FormaPagamento::whereIn('conta_id', Conta::pluck('id'))
                 ->with(['cartaoCredito', 'conta:id,nome'])
                 ->get()
                 ->sortBy(fn (FormaPagamento $forma) => "{$forma->conta->nome} $forma->nome")
                 ->values(),
+            'formasPagamentoFiltro' => $this->despesas->opcoesFormaPagamento($competencia, $contexto),
         ]);
     }
 

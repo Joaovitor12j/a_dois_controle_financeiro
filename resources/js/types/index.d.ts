@@ -119,6 +119,19 @@ export interface Despesa {
 }
 
 export type StatusDespesa = 'vencida' | 'pendente' | 'paga';
+export type StatusPagamentoFiltro = 'paga' | 'pendente';
+
+export interface FiltrosDespesaValores {
+    categoria_despesa_id?: string;
+    tipo?: TipoLancamentoDespesa;
+    forma_pagamento_id?: string;
+    status?: StatusPagamentoFiltro;
+}
+
+export interface FormaPagamentoResumo {
+    id: string;
+    nome: string;
+}
 
 export interface OcorrenciaDespesa {
     despesa: Despesa;
@@ -202,6 +215,8 @@ export interface DashboardProps {
     formasPagamento: FormaPagamento[];
     contas: ContaResumo[];
     categoriasRenda: CategoriaRenda[];
+    filtros: FiltrosDespesaValores;
+    formasPagamentoFiltro: FormaPagamentoResumo[];
 }
 
 export type PageProps<

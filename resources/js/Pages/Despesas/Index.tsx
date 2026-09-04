@@ -1,3 +1,4 @@
+import FiltrosDespesa from '@/Components/FiltrosDespesa';
 import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatarCompetenciaExtenso } from '@/Pages/Dashboard/Partials/SeletorVisualizacao';
@@ -5,7 +6,9 @@ import type {
     CategoriaDespesa,
     ContextoDespesa,
     Despesa,
+    FiltrosDespesaValores,
     FormaPagamento,
+    FormaPagamentoResumo,
     OcorrenciaDespesa,
 } from '@/types';
 import { Head, router } from '@inertiajs/react';
@@ -57,14 +60,18 @@ export default function Index({
     ocorrencias,
     competencia,
     contexto,
+    filtros,
     categoriasDespesa,
     formasPagamento,
+    formasPagamentoFiltro,
 }: {
     ocorrencias: OcorrenciaDespesa[];
     competencia: string;
     contexto: ContextoDespesa;
+    filtros: FiltrosDespesaValores;
     categoriasDespesa: CategoriaDespesa[];
     formasPagamento: FormaPagamento[];
+    formasPagamentoFiltro: FormaPagamentoResumo[];
 }) {
     const [formulario, setFormulario] =
         useState<AlvoDeFormulario>(formularioFechado);
@@ -102,6 +109,36 @@ export default function Index({
             route('despesas.index'),
             { contexto: parcial.contexto ?? contexto, ano, mes },
             { preserveState: true, preserveScroll: true, replace: true },
+        );
+    };
+
+    const aplicarFiltros = (parcial: FiltrosDespesaValores) => {
+        const [ano, mes] = competencia.split('-');
+
+        router.get(
+            route('despesas.index'),
+            { contexto, ano, mes, ...filtros, ...parcial },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ['ocorrencias', 'filtros'],
+            },
+        );
+    };
+
+    const limparFiltros = () => {
+        const [ano, mes] = competencia.split('-');
+
+        router.get(
+            route('despesas.index'),
+            { contexto, ano, mes },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ['ocorrencias', 'filtros'],
+            },
         );
     };
 
@@ -211,6 +248,14 @@ export default function Index({
                     aoMudarContexto={(novoContexto) =>
                         navegar({ contexto: novoContexto })
                     }
+                />
+
+                <FiltrosDespesa
+                    filtros={filtros}
+                    categoriasDespesa={categoriasDespesa}
+                    formasPagamento={formasPagamentoFiltro}
+                    aoMudar={aplicarFiltros}
+                    aoLimpar={limparFiltros}
                 />
 
                 {!temDespesas ? (

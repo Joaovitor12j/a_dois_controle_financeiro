@@ -1,3 +1,4 @@
+import FiltrosDespesa from '@/Components/FiltrosDespesa';
 import FormularioDespesa from '@/Pages/Despesas/Partials/FormularioDespesa';
 import Alertas from '@/Pages/Dashboard/Partials/Alertas';
 import ContribuicaoPessoa from '@/Pages/Dashboard/Partials/ContribuicaoPessoa';
@@ -10,7 +11,11 @@ import SeletorVisualizacao, {
 } from '@/Pages/Dashboard/Partials/SeletorVisualizacao';
 import FormularioRenda from '@/Pages/Rendas/Partials/FormularioRenda';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import type { DashboardProps, ModoVisualizacao } from '@/types';
+import type {
+    DashboardProps,
+    FiltrosDespesaValores,
+    ModoVisualizacao,
+} from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -29,6 +34,8 @@ export default function Dashboard({
     formasPagamento,
     contas,
     categoriasRenda,
+    filtros,
+    formasPagamentoFiltro,
 }: DashboardProps) {
     const usuario = usePage().props.auth.usuario!;
     const [novaDespesa, setNovaDespesa] = useState({ aberto: false, aberturas: 0 });
@@ -41,6 +48,47 @@ export default function Dashboard({
             route('dashboard'),
             { modo: parcial.modo ?? modo, ano, mes },
             { preserveState: true, preserveScroll: true, replace: true },
+        );
+    };
+
+    const resumoProps = [
+        'resumo',
+        'serieSaldo',
+        'despesaPorCategoria',
+        'receitaPorCategoria',
+        'pendencias',
+        'alertas',
+        'contribuicao',
+        'filtros',
+    ];
+
+    const aplicarFiltros = (parcial: FiltrosDespesaValores) => {
+        const [ano, mes] = competencia.split('-');
+
+        router.get(
+            route('dashboard'),
+            { modo, ano, mes, ...filtros, ...parcial },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: resumoProps,
+            },
+        );
+    };
+
+    const limparFiltros = () => {
+        const [ano, mes] = competencia.split('-');
+
+        router.get(
+            route('dashboard'),
+            { modo, ano, mes },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: resumoProps,
+            },
         );
     };
 
@@ -69,6 +117,14 @@ export default function Dashboard({
             />
 
             <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8">
+                <FiltrosDespesa
+                    filtros={filtros}
+                    categoriasDespesa={categoriasDespesa}
+                    formasPagamento={formasPagamentoFiltro}
+                    aoMudar={aplicarFiltros}
+                    aoLimpar={limparFiltros}
+                />
+
                 <ResumoPeriodo
                     resumo={resumo}
                     despesaRotulo={despesaRotulo}

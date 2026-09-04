@@ -7,9 +7,12 @@ use App\Domain\Financeiro\CalculadoraOcorrenciaRenda;
 use App\Domain\ValueObjects\Competencia;
 use App\Domain\ValueObjects\Money;
 use App\Enums\ContextoDespesa;
+use App\Enums\FiltroStatusPagamento;
 use App\Enums\TipoLancamentoDespesa;
 use App\Enums\TipoRecorrencia;
 use App\Models\Despesa;
+use App\Models\FormaPagamento;
+use App\Models\Movimentacao;
 use App\Models\Renda;
 use App\Models\Scopes\DonoScope;
 use App\Models\Usuario;
@@ -24,18 +27,21 @@ final class DashboardService
         private readonly CalculadoraOcorrenciaRenda $calculadoraRenda,
     ) {}
 
-    /** @return array<string, mixed> */
-    public function obterResumo(string $modo, Competencia $competencia): array
+    /**
+     * @param  array{categoria_despesa_id?: string, tipo?: string, forma_pagamento_id?: string, status?: string}  $filtros
+     * @return array<string, mixed>
+     */
+    public function obterResumo(string $modo, Competencia $competencia, array $filtros = []): array
     {
         $usuarios = $this->usuariosDoEscopo($modo);
 
         $rendas = $this->rendasNoPeriodo($modo, $usuarios, $competencia);
-        $despesas = $this->despesasNoPeriodo($modo, $competencia);
+        $despesas = $this->despesasNoPeriodo($modo, $competencia, $filtros);
 
         $atual = $this->resumirPeriodo($rendas, $despesas, $competencia);
         $anterior = $this->resumirPeriodo(
             $this->rendasNoPeriodo($modo, $usuarios, $competencia->anterior()),
-            $this->despesasNoPeriodo($modo, $competencia->anterior()),
+            $this->despesasNoPeriodo($modo, $competencia->anterior(), $filtros),
             $competencia->anterior(),
         );
 
@@ -91,14 +97,20 @@ final class DashboardService
             ->values();
     }
 
-    /** @return Collection<int, Despesa> */
-    private function despesasNoPeriodo(string $modo, Competencia $competencia): Collection
+    /**
+     * @param  array{categoria_despesa_id?: string, tipo?: string, forma_pagamento_id?: string, status?: string}  $filtros
+     * @return Collection<int, Despesa>
+     */
+    private function despesasNoPeriodo(string $modo, Competencia $competencia, array $filtros = []): Collection
     {
         $despesas = Despesa::with([
             'categoriaDespesa',
+            'formaPagamento' => fn ($query) => $query->withTrashed(),
             'movimentacoes.formaPagamento' => fn ($query) => $query->withTrashed(),
             'movimentacoes.formaPagamento.conta' => fn ($query) => $query->withoutGlobalScope(DonoScope::class),
         ])
+            ->when(isset($filtros['categoria_despesa_id']), fn ($query) => $query->where('categoria_despesa_id', $filtros['categoria_despesa_id']))
+            ->when(isset($filtros['tipo']), fn ($query) => $query->where('tipo_lancamento', $filtros['tipo']))
             ->get()
             ->filter(fn (Despesa $despesa) => $this->calculadoraDespesa->existeNaCompetencia($despesa, $competencia));
 
@@ -106,7 +118,34 @@ final class DashboardService
             $despesas = $despesas->filter(fn (Despesa $despesa) => $despesa->ehConjunta());
         }
 
-        return $despesas->values();
+        return $despesas
+            ->filter(fn (Despesa $despesa) => $this->passaFiltroFormaPagamento($despesa, $competencia, $filtros['forma_pagamento_id'] ?? null))
+            ->filter(fn (Despesa $despesa) => $this->passaFiltroStatus($despesa, $competencia, $filtros['status'] ?? null))
+            ->values();
+    }
+
+    private function passaFiltroFormaPagamento(Despesa $despesa, Competencia $competencia, ?string $formaPagamentoId): bool
+    {
+        if ($formaPagamentoId === null) {
+            return true;
+        }
+
+        if ($despesa->ehParcelada()) {
+            return $despesa->forma_pagamento_id === $formaPagamentoId;
+        }
+
+        return $this->movimentacaoDaCompetencia($despesa, $competencia)?->forma_pagamento_id === $formaPagamentoId;
+    }
+
+    private function passaFiltroStatus(Despesa $despesa, Competencia $competencia, ?string $status): bool
+    {
+        if ($status === null) {
+            return true;
+        }
+
+        $paga = $this->movimentacaoDaCompetencia($despesa, $competencia) !== null;
+
+        return $status === FiltroStatusPagamento::Paga->value ? $paga : ! $paga;
     }
 
     private function movimentacaoDaCompetencia(Despesa|Renda $entidade, Competencia $competencia): ?object
@@ -114,6 +153,26 @@ final class DashboardService
         return $entidade->movimentacoes->first(
             fn ($movimentacao) => $movimentacao->competencia?->equals($competencia)
         );
+    }
+
+    /** @return list<array{id: string, nome: string}> */
+    public function opcoesFormaPagamento(string $modo, Competencia $competencia): array
+    {
+        return $this->despesasNoPeriodo($modo, $competencia)
+            ->map(function (Despesa $despesa) use ($competencia): ?FormaPagamento {
+                if ($despesa->ehParcelada()) {
+                    return $despesa->formaPagamento;
+                }
+
+                $movimentacao = $this->movimentacaoDaCompetencia($despesa, $competencia);
+
+                return $movimentacao instanceof Movimentacao ? $movimentacao->formaPagamento : null;
+            })
+            ->filter()
+            ->unique('id')
+            ->map(fn (FormaPagamento $forma) => ['id' => $forma->id, 'nome' => $forma->nome])
+            ->values()
+            ->all();
     }
 
     /**

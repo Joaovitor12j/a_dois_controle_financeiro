@@ -101,6 +101,37 @@ de pagamento na única competência possível da despesa (a da própria
 pagamento. Mensal e parcelada não têm essa opção na criação — só passam a ter
 competências pagas após criadas, pela ação dedicada de marcar como paga.
 
+## Filtros
+
+A página de despesas combina quatro filtros, todos opcionais e combináveis
+entre si (E lógico quando mais de um está ativo):
+
+- **Categoria**: restringe às despesas de uma categoria de despesa.
+- **Tipo de lançamento**: restringe a única, mensal ou parcelada.
+- **Forma de pagamento**: restringe pela forma de pagamento associada.
+  - Em despesa parcelada, a forma de pagamento é atributo da própria despesa
+    (o cartão da compra) — comparação direta, independe de a parcela estar
+    paga.
+  - Em despesa única ou mensal, que não têm forma de pagamento como
+    atributo, a comparação usa a forma de pagamento da movimentação de
+    pagamento na competência do período selecionado. Sem essa movimentação,
+    não há forma de pagamento a comparar: despesa única/mensal pendente na
+    competência do período nunca aparece quando esse filtro está ativo.
+- **Status de pagamento (paga/pendente)**: avaliado contra a competência do
+  período (mês/ano) selecionado na página — mesma competência usada para
+  exibir o status de cada despesa. Paga quando existe movimentação com
+  aquele `despesa_id` naquela competência (ver [Pagamento](#pagamento));
+  pendente quando não existe. Uma despesa sem competência possível no
+  período selecionado (mensal fora do intervalo `data_inicio`/`data_fim`,
+  parcelada sem parcela naquele mês) não aparece com nenhum dos dois valores
+  desse filtro — ela simplesmente não pertence ao período.
+
+Filtro de forma de pagamento e filtro de status pendente são mutuamente
+excludentes na prática para única/mensal: pendente implica ausência de
+movimentação, e forma de pagamento só existe através da movimentação. A
+combinação dos dois nesse caso resulta em lista vazia — comportamento
+esperado, não é erro.
+
 ## Questões em aberto
 
 - **Relação entre parcelamento e fatura.** Uma despesa parcelada paga em
@@ -119,4 +150,5 @@ Implementado em:
 `database/migrations/2026_09_02_000003_add_competencia_to_movimentacoes_table.php`,
 `app/Models/Despesa.php`, `app/Models/Movimentacao.php`,
 `app/Services/Financeiro/DespesaService.php`,
-`app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`.
+`app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`,
+`app/Http/Requests/FiltrosDespesaRequest.php`, `app/Enums/FiltroStatusPagamento.php`.

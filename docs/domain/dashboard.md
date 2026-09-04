@@ -72,6 +72,20 @@ Só existe em modo Casal. Duas medidas, por usuário:
   `movimentação → forma de pagamento → conta → usuário`, mesma regra de
   [movimentacoes.md](movimentacoes.md#pagamento-de-despesa).
 
+## Filtros
+
+O dashboard aceita os mesmos quatro filtros de despesa definidos em
+[despesas.md](despesas.md#filtros): categoria, tipo de lançamento, forma de
+pagamento e status de pagamento. Eles restringem o universo de despesas
+usado no cálculo de saldo, pendências, alertas, despesa por categoria e
+contribuição por pessoa — dentro do período e do modo (Individual/Casal) já
+selecionados. Não alteram a definição de saldo, o corte realizado/projetado
+nem nenhuma outra regra já descrita neste documento; apenas reduzem o
+conjunto de despesas considerado.
+
+Renda não é afetada por esses filtros — eles são exclusivamente sobre
+despesa.
+
 ## Questões em aberto
 
 - **Cartão de crédito no dashboard.** Fora do escopo desta tela por ora — fatura ainda não foi

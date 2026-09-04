@@ -32,23 +32,23 @@ class UpdateDespesaRequest extends FormRequest
             'categoria_despesa_id' => ['required', 'uuid', Rule::exists('categorias_despesa', 'id')],
             'descricao' => ['required', 'string', 'max:255'],
             'valor' => ['required', 'integer', 'min:1'],
-            'tipo_lancamento' => ['prohibited'],
 
-            'data_vencimento' => [$ehUnica, 'date'],
+            'data_vencimento' => ['nullable', $ehUnica, 'date'],
             'forma_pagamento_id' => [
                 'nullable', 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),
                 $tipoLancamento === TipoLancamentoDespesa::Parcelada ? 'required' : 'prohibited',
             ],
 
-            'dia_vencimento' => [$ehMensal, 'integer', 'between:1,31'],
-            'data_inicio' => [$ehMensal, 'date', $this->regraPrimeiroDiaDoMes()],
+            'dia_vencimento' => ['nullable', $ehMensal, 'integer', 'between:1,31'],
+            'data_inicio' => ['nullable', $ehMensal, 'date', $this->regraPrimeiroDiaDoMes()],
             'data_fim' => [
+                'nullable',
                 $tipoLancamento === TipoLancamentoDespesa::Mensal ? 'nullable' : 'prohibited',
                 'date', 'after_or_equal:data_inicio',
             ],
 
-            'numero_parcelas' => [$ehParcelada, 'integer', 'min:1'],
-            'data_primeira_parcela' => [$ehParcelada, 'date'],
+            'numero_parcelas' => ['nullable', $ehParcelada, 'integer', 'min:1'],
+            'data_primeira_parcela' => ['nullable', $ehParcelada, 'date'],
         ];
     }
 

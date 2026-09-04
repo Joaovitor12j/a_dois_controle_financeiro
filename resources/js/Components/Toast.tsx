@@ -7,7 +7,7 @@ interface ItemToast {
     mensagem: string;
 }
 
-const DURACAO_MS = 5000;
+const DURACAO_MS = 3000;
 const MENSAGEM_FALHA_GENERICA = 'Não foi possível concluir a ação. Tente novamente.';
 
 let proximoId = 0;
@@ -59,7 +59,7 @@ export default function Toast() {
     }
 
     return (
-        <div className="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4">
+        <div className="pointer-events-none fixed inset-x-0 top-20 z-[100] flex flex-col items-center gap-2 px-4">
             {itens.map((item) => (
                 <div
                     key={item.id}

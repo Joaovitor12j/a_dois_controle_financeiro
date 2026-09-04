@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Domain\ValueObjects\Competencia;
+use App\Http\Requests\FiltrosDespesaRequest;
 use App\Models\CategoriaDespesa;
 use App\Models\Conta;
 use App\Models\FormaPagamento;
 use App\Services\Financeiro\DashboardService;
 use App\Services\Financeiro\RendaService;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,7 +19,7 @@ class DashboardController extends Controller
         private readonly RendaService $rendas,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(FiltrosDespesaRequest $request): Response
     {
         $modo = $request->query('modo') === 'individual' ? 'individual' : 'casal';
 
@@ -27,8 +27,11 @@ class DashboardController extends Controller
             ? Competencia::deAnoMes((int) $request->query('ano'), (int) $request->query('mes'))
             : Competencia::deData(now());
 
+        $filtros = $request->validated();
+
         return Inertia::render('Dashboard', [
-            ...$this->dashboard->obterResumo($modo, $competencia),
+            ...$this->dashboard->obterResumo($modo, $competencia, $filtros),
+            'filtros' => $filtros,
             'categoriasDespesa' => CategoriaDespesa::orderBy('nome')->get(),
             'formasPagamento' => FormaPagamento::whereIn('conta_id', Conta::pluck('id'))
                 ->with(['cartaoCredito', 'conta:id,nome'])
@@ -37,6 +40,7 @@ class DashboardController extends Controller
                 ->values(),
             'contas' => $this->rendas->contasDisponiveis(),
             'categoriasRenda' => $this->rendas->categoriasDisponiveis(),
+            'formasPagamentoFiltro' => $this->dashboard->opcoesFormaPagamento($modo, $competencia),
         ]);
     }
 }
