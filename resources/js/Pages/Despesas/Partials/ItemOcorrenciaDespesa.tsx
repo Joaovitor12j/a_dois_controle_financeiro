@@ -44,7 +44,7 @@ function BotaoAlternarPagamento({
     paga: boolean;
     aoClicar: () => void;
 }) {
-    const rotulo = paga ? 'Desfazer pagamento' : 'Marcar como paga';
+    const rotulo = paga ? 'Desfazer pagamento' : 'Pagar despesa';
 
     return (
         <button

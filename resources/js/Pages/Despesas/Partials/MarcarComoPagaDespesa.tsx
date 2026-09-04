@@ -1,4 +1,5 @@
 import BlocoCondicional from '@/Components/BlocoCondicional';
+import DateInput from '@/Components/DateInput';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -62,7 +63,7 @@ export default function MarcarComoPagaDespesa({
         <Modal show={aberto} onClose={fechar} maxWidth="md">
             <form onSubmit={submeter} className="p-6 sm:p-8">
                 <h2 className="font-display text-xl font-semibold text-tinta">
-                    Marcar {despesa?.descricao} como paga
+                    Pagar {despesa?.descricao}
                 </h2>
 
                 <FormErrorSummary errors={errors} />
@@ -73,14 +74,14 @@ export default function MarcarComoPagaDespesa({
                         value="Data de pagamento"
                     />
 
-                    <TextInput
+                    <DateInput
                         id="data_pagamento"
-                        type="date"
                         className="mt-1.5 block w-full"
                         value={data.data_pagamento}
-                        onChange={(evento) =>
-                            setData('data_pagamento', evento.target.value)
+                        onChange={(valor) =>
+                            setData('data_pagamento', valor)
                         }
+                        hasError={Boolean(errors.data_pagamento)}
                         isFocused
                     />
 

@@ -1,3 +1,4 @@
+import DateInput from '@/Components/DateInput';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -265,14 +266,14 @@ export default function FormularioRenda({
                             value="Data de recebimento"
                         />
 
-                        <TextInput
+                        <DateInput
                             id="data_recebimento"
-                            type="date"
                             className="mt-1.5 block w-full"
                             value={data.data_recebimento}
-                            onChange={(evento) =>
-                                setData('data_recebimento', evento.target.value)
+                            onChange={(valor) =>
+                                setData('data_recebimento', valor)
                             }
+                            hasError={Boolean(errors.data_recebimento)}
                         />
 
                         <InputError
@@ -316,14 +317,14 @@ export default function FormularioRenda({
                                     value="Data de início"
                                 />
 
-                                <TextInput
+                                <DateInput
                                     id="data_inicio"
-                                    type="date"
                                     className="mt-1.5 block w-full"
                                     value={data.data_inicio}
-                                    onChange={(evento) =>
-                                        setData('data_inicio', evento.target.value)
+                                    onChange={(valor) =>
+                                        setData('data_inicio', valor)
                                     }
+                                    hasError={Boolean(errors.data_inicio)}
                                 />
 
                                 <InputError
@@ -339,14 +340,12 @@ export default function FormularioRenda({
                                 value="Data de fim (opcional)"
                             />
 
-                            <TextInput
+                            <DateInput
                                 id="data_fim"
-                                type="date"
                                 className="mt-1.5 block w-full"
                                 value={data.data_fim}
-                                onChange={(evento) =>
-                                    setData('data_fim', evento.target.value)
-                                }
+                                onChange={(valor) => setData('data_fim', valor)}
+                                hasError={Boolean(errors.data_fim)}
                             />
 
                             <InputError className="mt-2" message={errors.data_fim} />

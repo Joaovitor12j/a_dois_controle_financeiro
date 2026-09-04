@@ -1,4 +1,5 @@
 import Checkbox from '@/Components/Checkbox';
+import DateInput from '@/Components/DateInput';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -242,18 +243,16 @@ export default function FormularioFormaPagamento({
                                     value="Data do saldo inicial"
                                 />
 
-                                <TextInput
+                                <DateInput
                                     id="data_saldo_inicial"
-                                    type="date"
                                     className="mt-1.5 block w-full"
                                     value={data.data_saldo_inicial}
-                                    onChange={(evento) =>
-                                        setData(
-                                            'data_saldo_inicial',
-                                            evento.target.value,
-                                        )
+                                    onChange={(valor) =>
+                                        setData('data_saldo_inicial', valor)
                                     }
-                                    required
+                                    hasError={Boolean(
+                                        errors.data_saldo_inicial,
+                                    )}
                                 />
 
                                 <InputError

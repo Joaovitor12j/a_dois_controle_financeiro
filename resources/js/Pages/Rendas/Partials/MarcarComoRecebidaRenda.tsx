@@ -1,4 +1,5 @@
 import BlocoCondicional from '@/Components/BlocoCondicional';
+import DateInput from '@/Components/DateInput';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -141,14 +142,14 @@ export default function MarcarComoRecebidaRenda({
                         value="Data de recebimento"
                     />
 
-                    <TextInput
+                    <DateInput
                         id="data_recebimento"
-                        type="date"
                         className="mt-1.5 block w-full"
                         value={data.data_recebimento}
-                        onChange={(evento) =>
-                            setData('data_recebimento', evento.target.value)
+                        onChange={(valor) =>
+                            setData('data_recebimento', valor)
                         }
+                        hasError={Boolean(errors.data_recebimento)}
                     />
 
                     <InputError

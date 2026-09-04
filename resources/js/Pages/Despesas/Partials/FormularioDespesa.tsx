@@ -1,5 +1,6 @@
 import BlocoCondicional from '@/Components/BlocoCondicional';
 import Checkbox from '@/Components/Checkbox';
+import DateInput from '@/Components/DateInput';
 import FormErrorSummary from '@/Components/FormErrorSummary';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -403,14 +404,14 @@ export default function FormularioDespesa({
                                 value="Data de pagamento"
                             />
 
-                            <TextInput
+                            <DateInput
                                 id="data_pagamento"
-                                type="date"
                                 className="mt-1.5 block w-full"
                                 value={data.data_pagamento}
-                                onChange={(evento) =>
-                                    setData('data_pagamento', evento.target.value)
+                                onChange={(valor) =>
+                                    setData('data_pagamento', valor)
                                 }
+                                hasError={Boolean(errors.data_pagamento)}
                             />
 
                             <InputError
@@ -460,14 +461,14 @@ export default function FormularioDespesa({
                                 value="Data de vencimento"
                             />
 
-                            <TextInput
+                            <DateInput
                                 id="data_vencimento"
-                                type="date"
                                 className="mt-1.5 block w-full"
                                 value={data.data_vencimento}
-                                onChange={(evento) =>
-                                    setData('data_vencimento', evento.target.value)
+                                onChange={(valor) =>
+                                    setData('data_vencimento', valor)
                                 }
+                                hasError={Boolean(errors.data_vencimento)}
                             />
 
                             <InputError
@@ -550,14 +551,12 @@ export default function FormularioDespesa({
                             value="Data de fim (opcional)"
                         />
 
-                        <TextInput
+                        <DateInput
                             id="data_fim"
-                            type="date"
                             className="mt-1.5 block w-full"
                             value={data.data_fim}
-                            onChange={(evento) =>
-                                setData('data_fim', evento.target.value)
-                            }
+                            onChange={(valor) => setData('data_fim', valor)}
+                            hasError={Boolean(errors.data_fim)}
                         />
 
                         <InputError className="mt-2" message={errors.data_fim} />
@@ -677,17 +676,14 @@ export default function FormularioDespesa({
                             value="Data da primeira parcela"
                         />
 
-                        <TextInput
+                        <DateInput
                             id="data_primeira_parcela"
-                            type="date"
                             className="mt-1.5 block w-full"
                             value={data.data_primeira_parcela}
-                            onChange={(evento) =>
-                                setData(
-                                    'data_primeira_parcela',
-                                    evento.target.value,
-                                )
+                            onChange={(valor) =>
+                                setData('data_primeira_parcela', valor)
                             }
+                            hasError={Boolean(errors.data_primeira_parcela)}
                         />
 
                         <InputError
