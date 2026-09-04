@@ -36,3 +36,17 @@ test('e-mail já usado pelo parceiro é rejeitado', function () {
         ])
         ->assertInvalid(['email']);
 });
+
+test('cor é atualizada sem enviar nome e e-mail', function () {
+    $usuario = Usuario::factory()->comCor('#2563EB')->create();
+    Usuario::factory()->comCor('#DB2777')->create();
+
+    $this->actingAs($usuario)
+        ->patch('/profile', [
+            'cor' => '#16A34A',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect('/profile');
+
+    expect($usuario->corUsuario->fresh()->cor)->toBe('#16A34A');
+});

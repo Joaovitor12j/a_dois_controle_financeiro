@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UsuarioFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -20,7 +21,6 @@ class Usuario extends Authenticatable
         'nome',
         'email',
         'password',
-        'cor',
     ];
 
     /** @var list<string> */
@@ -35,5 +35,11 @@ class Usuario extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+
+    /** @return HasOne<CorUsuario, $this> */
+    public function corUsuario(): HasOne
+    {
+        return $this->hasOne(CorUsuario::class);
     }
 }

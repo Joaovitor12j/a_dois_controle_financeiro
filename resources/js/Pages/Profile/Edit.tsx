@@ -1,9 +1,27 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
+import AtualizarCorForm from './Partials/AtualizarCorForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
-export default function Edit() {
+type OpcaoCor = {
+    id: string;
+    nome: string;
+    hex: string;
+    compativeis: string[];
+};
+
+export default function Edit({
+    corAtual,
+    corParceiro,
+    paleta,
+    corDoCasal,
+}: {
+    corAtual: string;
+    corParceiro: string | null;
+    paleta: OpcaoCor[];
+    corDoCasal: string | null;
+}) {
     return (
         <AuthenticatedLayout
             header={
@@ -17,6 +35,16 @@ export default function Edit() {
             <div className="mx-auto max-w-7xl space-y-6 px-4 py-10 sm:px-6 lg:px-8">
                 <div className="rounded-xl border border-tinta/10 bg-white p-6 sm:p-8">
                     <UpdateProfileInformationForm className="max-w-xl" />
+                </div>
+
+                <div className="rounded-xl border border-tinta/10 bg-white p-6 sm:p-8">
+                    <AtualizarCorForm
+                        className="max-w-xl"
+                        corAtual={corAtual}
+                        corParceiro={corParceiro}
+                        paleta={paleta}
+                        corDoCasal={corDoCasal}
+                    />
                 </div>
 
                 <div className="rounded-xl border border-tinta/10 bg-white p-6 sm:p-8">

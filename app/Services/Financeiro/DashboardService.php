@@ -82,7 +82,7 @@ final class DashboardService
     private function usuariosCasalResumo(): array
     {
         return $this->usuariosDoEscopo('casal')
-            ->map(fn (Usuario $usuario) => ['id' => $usuario->id, 'nome' => $usuario->nome, 'cor' => $usuario->cor])
+            ->map(fn (Usuario $usuario) => ['id' => $usuario->id, 'nome' => $usuario->nome, 'cor' => $usuario->corUsuario->cor])
             ->all();
     }
 
@@ -146,13 +146,14 @@ final class DashboardService
     private function usuariosDoEscopo(string $modo): Collection
     {
         if ($modo !== 'casal') {
-            return Usuario::query()->where('id', Auth::id())->get();
+            return Usuario::query()->with('corUsuario')->where('id', Auth::id())->get();
         }
 
         /** @var array<int, array{email: string}> $iniciais */
         $iniciais = config('usuarios.iniciais');
 
         return Usuario::query()
+            ->with('corUsuario')
             ->whereIn('email', array_column($iniciais, 'email'))
             ->get();
     }
@@ -617,14 +618,14 @@ final class DashboardService
             'receita' => $usuarios->map(fn (Usuario $usuario) => [
                 'usuarioId' => $usuario->id,
                 'nome' => $usuario->nome,
-                'cor' => $usuario->cor,
+                'cor' => $usuario->corUsuario->cor,
                 'valor' => $rendasRecebidasPorUsuario->get($usuario->id, collect())
                     ->reduce(fn (Money $carry, Renda $r) => $carry->plus($r->valor), Money::zero())->cents,
             ])->all(),
             'despesa' => $usuarios->map(fn (Usuario $usuario) => [
                 'usuarioId' => $usuario->id,
                 'nome' => $usuario->nome,
-                'cor' => $usuario->cor,
+                'cor' => $usuario->corUsuario->cor,
                 'valor' => $despesasPagasPorUsuario->get($usuario->id, collect())
                     ->reduce(fn (Money $carry, array $item) => $carry->plus($item['despesa']->valor), Money::zero())->cents,
             ])->all(),

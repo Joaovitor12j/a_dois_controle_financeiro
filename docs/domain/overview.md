@@ -45,6 +45,7 @@ conjunta não deve ser tratada como individual.
 
 | Domínio | Documento |
 | --- | --- |
+| Usuários | [usuarios.md](usuarios.md) |
 | Contas | [contas.md](contas.md) |
 | Formas de pagamento | [formas-pagamento.md](formas-pagamento.md) |
 | Categorias | [categorias.md](categorias.md) |

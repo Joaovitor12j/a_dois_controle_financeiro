@@ -22,8 +22,8 @@ function casalDeTeste(): object
     /** @var array<int, array{email: string}> $iniciais */
     $iniciais = config('usuarios.iniciais');
 
-    $joao = Usuario::factory()->create(['nome' => 'João', 'cor' => '#2F6F5E', 'email' => $iniciais[0]['email']]);
-    $elisa = Usuario::factory()->create(['nome' => 'Elisa', 'cor' => '#7B3F55', 'email' => $iniciais[1]['email']]);
+    $joao = Usuario::factory()->comCor('#2F6F5E')->create(['nome' => 'João', 'email' => $iniciais[0]['email']]);
+    $elisa = Usuario::factory()->comCor('#7B3F55')->create(['nome' => 'Elisa', 'email' => $iniciais[1]['email']]);
 
     $contaJoao = Conta::withoutGlobalScope(DonoScope::class)->create(['usuario_id' => $joao->id, 'nome' => 'Conta João']);
     $contaElisa = Conta::withoutGlobalScope(DonoScope::class)->create(['usuario_id' => $elisa->id, 'nome' => 'Conta Elisa']);

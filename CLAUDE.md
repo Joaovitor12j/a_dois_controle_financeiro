@@ -10,6 +10,7 @@ Domínios com regra definida hoje:
 
 | Domínio | Documento |
 | --- | --- |
+| Usuários | [usuarios.md](docs/domain/usuarios.md) |
 | Contas | [contas.md](docs/domain/contas.md) |
 | Formas de pagamento | [formas-pagamento.md](docs/domain/formas-pagamento.md) |
 | Rendas | [rendas.md](docs/domain/rendas.md) |

@@ -30,3 +30,4 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0012](0012-pagamento-de-despesa-como-movimentacao.md) | Pagamento de despesa como movimentação, não como atributo | Aceita |
 | [0013](0013-agregacao-casal-no-dashboard-bypass-pontual-donoscope.md) | Agregação casal no dashboard: bypass pontual do DonoScope | Aceita |
 | [0014](0014-renda-usa-forma-de-pagamento-designada-da-conta.md) | Renda usa forma de pagamento designada da conta, não escolha livre no recebimento | Aceita |
+| [0015](0015-cor-de-usuario-em-tabela-propria.md) | Cor de usuário e cor do casal em tabela própria | Aceita |
