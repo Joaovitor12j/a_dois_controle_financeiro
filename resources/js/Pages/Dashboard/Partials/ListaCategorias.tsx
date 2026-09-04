@@ -1,3 +1,4 @@
+import { iconeCategoriaComponente } from '@/lib/icones-categoria';
 import { formatarMoeda, formatarPercentual } from '@/lib/money';
 import type { CategoriaResumoItem } from '@/types';
 
@@ -5,10 +6,12 @@ export default function ListaCategorias({
     titulo,
     itens,
     total,
+    aoClicarItem,
 }: {
     titulo: string;
     itens: CategoriaResumoItem[];
     total: number;
+    aoClicarItem?: (item: CategoriaResumoItem) => void;
 }) {
     const maiorValor = Math.max(1, ...itens.map((item) => item.valor));
 
@@ -29,47 +32,94 @@ export default function ListaCategorias({
                 </p>
             ) : (
                 <div className="flex flex-col gap-4 px-6 py-5">
-                    {itens.map((item) => (
-                        <div key={item.nome} className="flex items-center gap-3">
-                            <span
-                                aria-hidden="true"
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                                style={{ backgroundColor: `${item.cor}24` }}
-                            >
-                                <span
-                                    className="h-2.5 w-2.5 rounded-full"
-                                    style={{ backgroundColor: item.cor }}
-                                />
-                            </span>
+                    {itens.map((item) => {
+                        const Icone = iconeCategoriaComponente(item.icone);
+                        const temSplit =
+                            item.valorPago !== undefined &&
+                            item.valorPendente !== undefined;
 
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-baseline justify-between gap-3">
-                                    <span className="text-sm font-medium text-tinta">
-                                        {item.nome}
-                                    </span>
-                                    <span className="text-sm font-semibold tabular-nums text-tinta">
-                                        {formatarMoeda(item.valor)}
-                                    </span>
+                        const conteudo = (
+                            <>
+                                <span
+                                    aria-hidden="true"
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                                    style={{ backgroundColor: `${item.cor}24` }}
+                                >
+                                    <Icone
+                                        className="h-4 w-4"
+                                        strokeWidth={1.75}
+                                        style={{ color: item.cor }}
+                                    />
+                                </span>
+
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <span className="text-sm font-medium text-tinta">
+                                            {item.nome}
+                                        </span>
+                                        <span className="text-sm font-semibold tabular-nums text-tinta">
+                                            {formatarMoeda(item.valor)}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1.5 flex items-center gap-2.5">
+                                        <span className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-tinta/[0.07]">
+                                            {temSplit ? (
+                                                <>
+                                                    <span
+                                                        className="block h-1.5"
+                                                        style={{
+                                                            backgroundColor: item.cor,
+                                                            width: `${((item.valorPago ?? 0) / maiorValor) * 100}%`,
+                                                        }}
+                                                    />
+                                                    <span
+                                                        className="block h-1.5"
+                                                        style={{
+                                                            backgroundColor: item.cor,
+                                                            opacity: 0.35,
+                                                            width: `${((item.valorPendente ?? 0) / maiorValor) * 100}%`,
+                                                        }}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <span
+                                                    className="block h-1.5 rounded-full"
+                                                    style={{
+                                                        backgroundColor: item.cor,
+                                                        width: `${(item.valor / maiorValor) * 100}%`,
+                                                    }}
+                                                />
+                                            )}
+                                        </span>
+                                        <span className="w-11 shrink-0 text-right text-xs tabular-nums text-tinta-claro">
+                                            {total > 0
+                                                ? formatarPercentual((item.valor / total) * 100)
+                                                : '—'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="mt-1.5 flex items-center gap-2.5">
-                                    <span className="block h-1.5 flex-1 overflow-hidden rounded-full bg-tinta/[0.07]">
-                                        <span
-                                            className="block h-1.5 rounded-full"
-                                            style={{
-                                                backgroundColor: item.cor,
-                                                width: `${(item.valor / maiorValor) * 100}%`,
-                                            }}
-                                        />
-                                    </span>
-                                    <span className="w-11 shrink-0 text-right text-xs tabular-nums text-tinta-claro">
-                                        {total > 0
-                                            ? formatarPercentual((item.valor / total) * 100)
-                                            : '—'}
-                                    </span>
-                                </div>
+                            </>
+                        );
+
+                        if (aoClicarItem) {
+                            return (
+                                <button
+                                    key={item.nome}
+                                    type="button"
+                                    onClick={() => aoClicarItem(item)}
+                                    className="flex items-center gap-3 rounded-lg text-left transition-colors hover:bg-papel/60"
+                                >
+                                    {conteudo}
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <div key={item.nome} className="flex items-center gap-3">
+                                {conteudo}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

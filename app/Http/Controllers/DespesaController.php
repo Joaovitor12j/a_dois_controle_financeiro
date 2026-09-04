@@ -149,6 +149,6 @@ class DespesaController extends Controller
 
     private function voltarParaListagem(Request $request): RedirectResponse
     {
-        return Redirect::route('despesas.index', Arr::only($request->query(), ['ano', 'mes', 'contexto']));
+        return Redirect::back(fallback: route('despesas.index', Arr::only($request->query(), ['ano', 'mes', 'contexto'])));
     }
 }

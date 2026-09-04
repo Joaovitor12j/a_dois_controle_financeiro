@@ -91,10 +91,11 @@ it('modo individual soma só a renda e a despesa do usuário autenticado', funct
     ]);
 
     $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
+    $contribuicao = app(DashboardService::class)->obterContribuicaoPorPessoa('individual', Competencia::deString('2026-09'));
 
     expect($resumo['resumo']['receita'])->toBe(500000)
         ->and($resumo['resumo']['despesa'])->toBe(10000)
-        ->and($resumo['contribuicao'])->toBeNull();
+        ->and($contribuicao)->toBeNull();
 });
 
 it('modo casal soma a renda dos dois usuários e só a despesa conjunta', function () {
@@ -165,17 +166,18 @@ it('modo casal soma a renda dos dois usuários e só a despesa conjunta', functi
     ]);
 
     $resumo = app(DashboardService::class)->obterResumo('casal', Competencia::deString('2026-09'));
+    $contribuicao = app(DashboardService::class)->obterContribuicaoPorPessoa('casal', Competencia::deString('2026-09'));
 
     /** @var array<int, array{usuarioId: string, valor: int}> $despesaPorPessoa */
-    $despesaPorPessoa = $resumo['contribuicao']['despesa'];
+    $despesaPorPessoa = $contribuicao['despesa'];
 
     /** @var array<int, array{usuarioId: string, valor: int}> $receitaPorPessoa */
-    $receitaPorPessoa = $resumo['contribuicao']['receita'];
+    $receitaPorPessoa = $contribuicao['receita'];
 
     expect($resumo['resumo']['receita'])->toBe(800000)
         ->and($resumo['resumo']['despesa'])->toBe(240000)
         ->and($resumo['despesaRotulo'])->toBe('Despesa conjunta')
-        ->and($resumo['contribuicao']['receita'])->toHaveCount(2)
+        ->and($contribuicao['receita'])->toHaveCount(2)
         ->and(collect($receitaPorPessoa)->firstWhere('usuarioId', $c->joao->id)['valor'])->toBe(500000)
         ->and(collect($receitaPorPessoa)->firstWhere('usuarioId', $c->elisa->id)['valor'])->toBe(300000)
         ->and(collect($despesaPorPessoa)->firstWhere('usuarioId', $c->elisa->id)['valor'])->toBe(240000)
@@ -184,7 +186,7 @@ it('modo casal soma a renda dos dois usuários e só a despesa conjunta', functi
     expect($resumo['pendencias'])->toHaveCount(0);
 });
 
-it('lista renda não recebida em pendências e alertas, junto com despesa não paga', function () {
+it('lista renda não recebida em pendências, com nível de criticidade, junto com despesa não paga', function () {
     $c = casalDeTeste();
 
     Renda::withoutGlobalScope(DonoScope::class)->create([
@@ -209,16 +211,13 @@ it('lista renda não recebida em pendências e alertas, junto com despesa não p
 
     $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
 
-    /** @var array<int, array{id: string, tipo: string, descricao: string}> $pendencias */
+    /** @var array<int, array{id: string, tipo: string, descricao: string, nivel: string}> $pendencias */
     $pendencias = $resumo['pendencias'];
-
-    /** @var array<int, array{titulo: string}> $alertas */
-    $alertas = $resumo['alertas'];
 
     expect($pendencias)->toHaveCount(2)
         ->and(collect($pendencias)->pluck('tipo')->all())->toBe(['renda', 'despesa'])
-        ->and($alertas)->toHaveCount(2)
-        ->and(collect($alertas)->pluck('titulo')->first())->toContain('Freela');
+        ->and(collect($pendencias)->pluck('nivel')->unique()->all())->toBe(['vence_em_breve'])
+        ->and(collect($pendencias)->pluck('descricao')->first())->toContain('Freela');
 });
 
 it('só conta renda como realizada na série do saldo quando existe movimentação de recebimento', function () {
@@ -281,10 +280,10 @@ it('resolve contribuição por pessoa mesmo quando a forma de pagamento usada no
 
     $c->formaElisa->delete();
 
-    $resumo = app(DashboardService::class)->obterResumo('casal', Competencia::deString('2026-09'));
+    $contribuicao = app(DashboardService::class)->obterContribuicaoPorPessoa('casal', Competencia::deString('2026-09'));
 
     /** @var array<int, array{usuarioId: string, valor: int}> $despesaPorPessoa */
-    $despesaPorPessoa = $resumo['contribuicao']['despesa'];
+    $despesaPorPessoa = $contribuicao['despesa'];
 
     expect(collect($despesaPorPessoa)->firstWhere('usuarioId', $c->elisa->id)['valor'])->toBe(240000);
 });
@@ -314,7 +313,35 @@ it('calcula variação percentual em relação ao mês anterior', function () {
 
     $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
 
-    expect($resumo['resumo']['receitaDeltaPct'])->toBe(25.0);
+    expect($resumo['resumo']['receitaDelta'])->toBe(['tipo' => 'percentual', 'valor' => 25.0]);
+});
+
+it('mostra variação absoluta em vez de percentual quando a base do mês anterior é pequena demais', function () {
+    $c = casalDeTeste();
+
+    Renda::withoutGlobalScope(DonoScope::class)->create([
+        'usuario_id' => $c->joao->id,
+        'conta_id' => $c->contaJoao->id,
+        'categoria_renda_id' => $c->categoriaRenda->id,
+        'descricao' => 'Salário João agosto',
+        'valor' => Money::fromCents(2000),
+        'tipo_recorrencia' => 'unica',
+        'data_recebimento' => '2026-08-05',
+    ]);
+
+    Renda::withoutGlobalScope(DonoScope::class)->create([
+        'usuario_id' => $c->joao->id,
+        'conta_id' => $c->contaJoao->id,
+        'categoria_renda_id' => $c->categoriaRenda->id,
+        'descricao' => 'Salário João setembro',
+        'valor' => Money::fromCents(500000),
+        'tipo_recorrencia' => 'unica',
+        'data_recebimento' => '2026-09-05',
+    ]);
+
+    $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
+
+    expect($resumo['resumo']['receitaDelta'])->toBe(['tipo' => 'absoluto', 'valor' => 498000]);
 });
 
 it('não realiza nada num período futuro e não quebra a série do saldo', function () {
@@ -331,11 +358,13 @@ it('não realiza nada num período futuro e não quebra a série do saldo', func
     ]);
 
     $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-12'));
+    $serieSaldo = app(DashboardService::class)->obterSerieSaldo('individual', Competencia::deString('2026-12'));
 
-    /** @var array<int, array{tipo: string}> $serieSaldo */
-    $serieSaldo = $resumo['serieSaldo'];
+    /** @var array<int, array{tipo: string}> $pontos */
+    $pontos = $serieSaldo['serie'];
 
     expect($resumo['resumo']['saldo'])->toBe(0)
         ->and($resumo['resumo']['receita'])->toBe(500000)
-        ->and(collect($serieSaldo)->pluck('tipo')->unique()->values()->all())->toBe(['realizado', 'projetado']);
+        ->and($resumo['resumo']['statusPeriodo'])->toBe('futuro')
+        ->and(collect($pontos)->pluck('tipo')->unique()->values()->all())->toBe(['realizado', 'projetado']);
 });

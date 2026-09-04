@@ -1,10 +1,33 @@
+import MarcarComoPagaDespesa from '@/Pages/Despesas/Partials/MarcarComoPagaDespesa';
 import { formatarMoeda } from '@/lib/money';
-import type { PendenciaItem } from '@/types';
+import type { FormaPagamento, ModoVisualizacao, PendenciaItem } from '@/types';
+import { CircleCheck } from 'lucide-react';
+import { useState } from 'react';
 
-function formatarData(data: string): string {
-    const [ano, mes, dia] = data.split('-');
+function descreverPrazo(dias: number, tipo: 'despesa' | 'renda'): string {
+    if (tipo === 'renda') {
+        if (dias === 0) return 'Recebe hoje';
+        if (dias === 1) return 'Recebe amanhã';
+        if (dias > 1) return `Recebe em ${dias} dias`;
 
-    return `${dia}/${mes}`;
+        const diasAtras = Math.abs(dias);
+
+        return diasAtras === 1
+            ? 'Deveria ter recebido há 1 dia'
+            : `Deveria ter recebido há ${diasAtras} dias`;
+    }
+
+    if (dias === 0) return 'Vence hoje';
+    if (dias === 1) return 'Vence amanhã';
+    if (dias > 1) return `Vence em ${dias} dias`;
+
+    const diasAtras = Math.abs(dias);
+
+    return diasAtras === 1 ? 'Venceu há 1 dia' : `Venceu há ${diasAtras} dias`;
+}
+
+function corDoNivel(nivel: PendenciaItem['nivel']): string {
+    return nivel === 'vencida' ? 'bg-vinho' : nivel === 'vence_em_breve' ? 'bg-ouro' : 'bg-tinta/20';
 }
 
 function TotalPorTipo({
@@ -36,11 +59,32 @@ function TotalPorTipo({
     );
 }
 
-export default function Pendencias({ pendencias }: { pendencias: PendenciaItem[] }) {
+export default function Pendencias({
+    pendencias,
+    modo,
+    competencia,
+    formasPagamento,
+    aoClicarItem,
+}: {
+    pendencias: PendenciaItem[];
+    modo: ModoVisualizacao;
+    competencia: string;
+    formasPagamento: FormaPagamento[];
+    aoClicarItem?: (item: PendenciaItem) => void;
+}) {
+    const [pagando, setPagando] = useState<PendenciaItem | null>(null);
+    const [aberturas, setAberturas] = useState(0);
+
     const despesas = pendencias.filter((item) => item.tipo === 'despesa');
     const rendas = pendencias.filter((item) => item.tipo === 'renda');
     const totalDespesas = despesas.reduce((soma, item) => soma + item.valor, 0);
     const totalRendas = rendas.reduce((soma, item) => soma + item.valor, 0);
+    const criticos = pendencias.filter((item) => item.nivel !== 'no_prazo').length;
+
+    const abrirPagamento = (item: PendenciaItem) => {
+        setPagando(item);
+        setAberturas((atual) => atual + 1);
+    };
 
     return (
         <div className="rounded-xl border border-tinta/10 bg-white">
@@ -54,9 +98,16 @@ export default function Pendencias({ pendencias }: { pendencias: PendenciaItem[]
                             Previsto — ainda não entrou nos valores realizados acima
                         </p>
                     </div>
-                    <span className="rounded-full bg-papel-sombra px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-tinta-claro">
-                        Previsto
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {criticos > 0 && (
+                            <span className="rounded-full bg-vinho/10 px-2 py-0.5 text-[11px] font-semibold text-vinho-escuro">
+                                {criticos} crítica{criticos > 1 ? 's' : ''}
+                            </span>
+                        )}
+                        <span className="rounded-full bg-papel-sombra px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-tinta-claro">
+                            {pendencias.length}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -79,14 +130,17 @@ export default function Pendencias({ pendencias }: { pendencias: PendenciaItem[]
                             >
                                 <span
                                     aria-hidden="true"
-                                    className={`h-7 w-[3px] shrink-0 rounded-full ${
-                                        item.tipo === 'renda' ? 'bg-verde' : 'bg-vinho'
-                                    }`}
+                                    className={`h-7 w-[3px] shrink-0 rounded-full ${corDoNivel(item.nivel)}`}
                                 />
-                                <span className="flex-1 truncate text-sm font-medium text-tinta">
+                                <button
+                                    type="button"
+                                    onClick={() => aoClicarItem?.(item)}
+                                    disabled={!aoClicarItem}
+                                    className="min-w-0 flex-1 truncate text-left text-sm font-medium text-tinta enabled:hover:underline"
+                                >
                                     {item.descricao}
-                                </span>
-                                {item.contexto !== null && (
+                                </button>
+                                {modo === 'individual' && item.contexto !== null && (
                                     <span
                                         className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                             item.contexto === 'conjunta'
@@ -97,9 +151,8 @@ export default function Pendencias({ pendencias }: { pendencias: PendenciaItem[]
                                         {item.contexto === 'conjunta' ? 'Conjunta' : 'Individual'}
                                     </span>
                                 )}
-                                <span className="w-24 shrink-0 text-right text-xs text-tinta-claro">
-                                    {item.tipo === 'renda' ? 'Recebe' : 'Vence'}{' '}
-                                    {formatarData(item.data)}
+                                <span className="w-36 shrink-0 text-right text-xs text-tinta-claro">
+                                    {descreverPrazo(item.dias, item.tipo)}
                                 </span>
                                 <span
                                     className={`w-24 shrink-0 text-right text-sm font-semibold tabular-nums ${
@@ -108,11 +161,39 @@ export default function Pendencias({ pendencias }: { pendencias: PendenciaItem[]
                                 >
                                     {formatarMoeda(item.valor)}
                                 </span>
+                                {item.tipo === 'despesa' && (
+                                    <button
+                                        type="button"
+                                        aria-label={`Marcar ${item.descricao} como paga`}
+                                        onClick={() => abrirPagamento(item)}
+                                        className="shrink-0 text-tinta-claro transition-colors hover:text-verde-escuro"
+                                    >
+                                        <CircleCheck className="h-4 w-4" />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            <MarcarComoPagaDespesa
+                key={`pendencia-pagar-${aberturas}`}
+                despesa={
+                    pagando
+                        ? {
+                              id: pagando.id,
+                              descricao: pagando.descricao,
+                              tipo_lancamento: pagando.tipoLancamento ?? 'unica',
+                          }
+                        : null
+                }
+                competencia={competencia}
+                contexto={pagando?.contexto ?? 'individual'}
+                formasPagamento={formasPagamento}
+                aberto={pagando !== null}
+                aoFechar={() => setPagando(null)}
+            />
         </div>
     );
 }

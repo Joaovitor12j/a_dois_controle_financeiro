@@ -28,10 +28,15 @@ class DashboardController extends Controller
             : Competencia::deData(now());
 
         $filtros = $request->validated();
+        $pessoaId = $modo === 'casal' ? $request->query('pessoa_id') : null;
 
         return Inertia::render('Dashboard', [
-            ...$this->dashboard->obterResumo($modo, $competencia, $filtros),
+            ...$this->dashboard->obterResumo($modo, $competencia, $filtros, $pessoaId),
+            'serieSaldo' => Inertia::defer(fn () => $this->dashboard->obterSerieSaldo($modo, $competencia, $filtros, $pessoaId)),
+            'contribuicao' => Inertia::defer(fn () => $this->dashboard->obterContribuicaoPorPessoa($modo, $competencia, $filtros)),
+            'tendencia6Meses' => Inertia::defer(fn () => $this->dashboard->tendencia6Meses($modo, $competencia)),
             'filtros' => $filtros,
+            'pessoaId' => $pessoaId,
             'categoriasDespesa' => CategoriaDespesa::orderBy('nome')->get(),
             'formasPagamento' => FormaPagamento::whereIn('conta_id', Conta::pluck('id'))
                 ->with(['cartaoCredito', 'conta:id,nome'])

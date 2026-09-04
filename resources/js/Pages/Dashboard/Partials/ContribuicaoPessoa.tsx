@@ -53,7 +53,6 @@ export default function ContribuicaoPessoa({
                 <h2 className="font-display text-[17px] font-semibold text-tinta">
                     Contribuição por pessoa
                 </h2>
-                <p className="mt-1 text-xs text-tinta-claro">Só aparece no modo Casal</p>
             </div>
 
             <div className="px-6 py-5">

@@ -23,6 +23,7 @@ class FiltrosDespesaRequest extends FormRequest
             'tipo' => ['sometimes', Rule::enum(TipoLancamentoDespesa::class)],
             'forma_pagamento_id' => ['sometimes', 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at')],
             'status' => ['sometimes', Rule::enum(FiltroStatusPagamento::class)],
+            'busca' => ['sometimes', 'string', 'max:255'],
         ];
     }
 

@@ -1,4 +1,4 @@
-import type { ModoVisualizacao } from '@/types';
+import type { ModoVisualizacao, UsuarioCasal } from '@/types';
 
 const nomesMeses = [
     'Janeiro',
@@ -25,6 +25,12 @@ export function competenciaAdjacente(
     return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
 }
 
+export function competenciaAtual(): string {
+    const hoje = new Date();
+
+    return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function formatarCompetenciaExtenso(competencia: string): string {
     const [ano, mes] = competencia.split('-').map(Number);
 
@@ -34,18 +40,26 @@ export function formatarCompetenciaExtenso(competencia: string): string {
 export default function SeletorVisualizacao({
     modo,
     competencia,
+    usuariosCasal,
+    pessoaId,
     aoMudarModo,
     aoMudarCompetencia,
+    aoMudarPessoa,
 }: {
     modo: ModoVisualizacao;
     competencia: string;
+    usuariosCasal: UsuarioCasal[];
+    pessoaId: string | null;
     aoMudarModo: (modo: ModoVisualizacao) => void;
     aoMudarCompetencia: (competencia: string) => void;
+    aoMudarPessoa: (pessoaId: string | null) => void;
 }) {
+    const ehMesAtual = competencia === competenciaAtual();
+
     return (
         <div className="border-b border-tinta/10 bg-white">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-tinta-claro">
                         Visualizando
                     </span>
@@ -56,8 +70,8 @@ export default function SeletorVisualizacao({
                             onClick={() => aoMudarModo('individual')}
                             className={`h-8 rounded-lg px-4 text-[13px] font-semibold transition-colors ${
                                 modo === 'individual'
-                                    ? 'bg-white text-tinta shadow-sm'
-                                    : 'text-tinta-claro'
+                                    ? 'bg-tinta text-papel'
+                                    : 'bg-transparent text-tinta-claro hover:text-tinta'
                             }`}
                         >
                             Individual
@@ -67,16 +81,56 @@ export default function SeletorVisualizacao({
                             onClick={() => aoMudarModo('casal')}
                             className={`h-8 rounded-lg px-4 text-[13px] font-semibold transition-colors ${
                                 modo === 'casal'
-                                    ? 'bg-white text-tinta shadow-sm'
-                                    : 'text-tinta-claro'
+                                    ? 'bg-tinta text-papel'
+                                    : 'bg-transparent text-tinta-claro hover:text-tinta'
                             }`}
                         >
                             Casal
                         </button>
                     </div>
+
+                    {modo === 'casal' && usuariosCasal.length > 0 && (
+                        <div className="flex gap-1 rounded-xl bg-papel-sombra p-1">
+                            <button
+                                type="button"
+                                onClick={() => aoMudarPessoa(null)}
+                                className={`h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors ${
+                                    pessoaId === null
+                                        ? 'bg-tinta text-papel'
+                                        : 'bg-transparent text-tinta-claro hover:text-tinta'
+                                }`}
+                            >
+                                Ambos
+                            </button>
+                            {usuariosCasal.map((usuario) => (
+                                <button
+                                    key={usuario.id}
+                                    type="button"
+                                    onClick={() => aoMudarPessoa(usuario.id)}
+                                    className={`h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors ${
+                                        pessoaId === usuario.id
+                                            ? 'bg-tinta text-papel'
+                                            : 'bg-transparent text-tinta-claro hover:text-tinta'
+                                    }`}
+                                >
+                                    {usuario.nome.split(' ')[0]}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {!ehMesAtual && (
+                        <button
+                            type="button"
+                            onClick={() => aoMudarCompetencia(competenciaAtual())}
+                            className="flex h-10 items-center rounded-xl border border-tinta/15 bg-white px-3 text-[13px] font-medium text-tinta-claro transition-colors hover:bg-papel"
+                        >
+                            Mês atual
+                        </button>
+                    )}
+
                     <button
                         type="button"
                         aria-label="Período anterior"

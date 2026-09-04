@@ -24,7 +24,7 @@ export default function MarcarComoPagaDespesa({
     aberto,
     aoFechar,
 }: {
-    despesa: Despesa | null;
+    despesa: Pick<Despesa, 'id' | 'descricao' | 'tipo_lancamento'> | null;
     competencia: string;
     contexto: ContextoDespesa;
     formasPagamento: FormaPagamento[];

@@ -26,14 +26,21 @@ export default function FiltrosDespesa({
     formasPagamento,
     aoMudar,
     aoLimpar,
+    busca,
+    aoMudarBusca,
 }: {
     filtros: FiltrosDespesaValores;
     categoriasDespesa: CategoriaDespesa[];
     formasPagamento: FormaPagamentoResumo[];
     aoMudar: (parcial: FiltrosDespesaValores) => void;
     aoLimpar: () => void;
+    busca?: string;
+    aoMudarBusca?: (valor: string) => void;
 }) {
-    const temFiltroAtivo = Object.values(filtros).some((valor) => !!valor);
+    const quantidadeFiltrosAtivos = Object.values(filtros).filter(
+        (valor) => !!valor,
+    ).length;
+    const temFiltroAtivo = quantidadeFiltrosAtivos > 0;
 
     return (
         <div className="mb-5 flex flex-wrap items-end gap-3.5 rounded-xl border border-tinta/10 bg-white px-4 py-3.5">
@@ -42,7 +49,30 @@ export default function FiltrosDespesa({
                 <span className="text-[11px] font-semibold uppercase tracking-wider">
                     Filtros
                 </span>
+                {temFiltroAtivo && (
+                    <span className="rounded-full bg-tinta/10 px-1.5 py-0.5 text-[11px] font-semibold text-tinta">
+                        {quantidadeFiltrosAtivos}
+                    </span>
+                )}
             </div>
+
+            {aoMudarBusca && (
+                <div className="min-w-[180px] flex-1">
+                    <InputLabel
+                        htmlFor="filtro-busca"
+                        value="Buscar descrição"
+                        className="text-xs"
+                    />
+                    <input
+                        id="filtro-busca"
+                        type="search"
+                        value={busca ?? ''}
+                        onChange={(evento) => aoMudarBusca(evento.target.value)}
+                        placeholder="Descrição da despesa"
+                        className="mt-1 block w-full rounded-lg border-tinta/15 text-sm focus:border-tinta focus:ring-tinta"
+                    />
+                </div>
+            )}
 
             <div className="min-w-[160px] flex-1">
                 <InputLabel

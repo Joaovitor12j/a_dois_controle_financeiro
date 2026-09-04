@@ -24,19 +24,24 @@ de `config('usuarios.iniciais')` ([overview.md](overview.md)). "Os dois usuário
 um desses e-mails configurados — não "toda linha da tabela `usuarios`". Um registro estranho na
 tabela (por exemplo, criado à mão fora do fluxo do seeder) não entra na soma do modo Casal.
 
-## Saldo do período
+## Realizado e Previsto
 
-**"Saldo" nesta tela não é saldo bancário real.** Um saldo de conta de verdade dependeria de renda
-gerar movimentação e de saldo inicial estar coberto pelo redesenho de movimentação — nenhum dos dois
-está redesenhado ainda (ver [movimentacoes.md](movimentacoes.md)).
+**Não é saldo bancário real.** Um saldo de conta de verdade dependeria de saldo inicial estar
+coberto pelo redesenho de movimentação — isso ainda não está redesenhado (ver
+[movimentacoes.md](movimentacoes.md)).
 
-Por isso, "saldo" é definido como o **resultado acumulado dentro do período selecionado**: a soma
-das rendas e despesas do mês, dia a dia, começando do zero no primeiro dia do período. Isso é
-diferente de "Resultado" (receita total do período − despesa total do período): saldo reflete só o
-que já é certo até o ponto de corte; resultado é a soma completa do período, incluindo o que ainda
-não aconteceu.
+Por isso, a tela expõe dois números distintos para o período:
 
-Ponto de corte entre "realizado" e "projetado":
+- **Realizado** — resultado acumulado dentro do período selecionado: a soma das rendas e despesas
+  do mês, dia a dia, começando do zero no primeiro dia do período, até o ponto de corte. Rótulo
+  varia com o período: mês atual → "Realizado até hoje"; mês passado → "Realizado no mês"; mês
+  futuro → o número não se aplica (nada pôde ter acontecido ainda) e o card informa isso em vez de
+  exibir zero.
+- **Previsto** — soma completa do período (receita total − despesa total), incluindo o que ainda
+  não aconteceu. Corresponde ao que antes era chamado de "Resultado"; o cálculo não mudou, só o
+  nome.
+
+Ponto de corte entre Realizado e Previsto:
 
 - Período é o mês atual → corte é hoje.
 - Período é um mês passado → corte é o último dia do mês (tudo pôde ter acontecido).
@@ -48,18 +53,80 @@ paga (existe movimentação na competência), pelo dia do pagamento. Uma renda o
 sempre projeção**, nunca realizado, mesmo que seu dia agendado já tenha passado — renda projetada
 entra pelo dia agendado de recebimento, despesa projetada entra pelo dia de vencimento.
 
-**Despesa parcelada não entra na evolução diária do saldo, nem em Pendências, nem em Alertas** —
-ela não tem data de vencimento própria (esse dado pertence à fatura, e fatura ainda não foi
-redesenhada). Ela continua entrando nos totais do período e em "Despesa por categoria".
+**Despesa parcelada não entra na evolução diária do saldo, nem em Pendências** — ela não tem data
+de vencimento própria (esse dado pertence à fatura, e fatura ainda não foi redesenhada). Ela
+continua entrando nos totais do período, em "Despesa por categoria" e em "Despesa por forma de
+pagamento". A tela avisa essa limitação junto da evolução diária, quando há alguma parcelada no
+período.
 
-## Pendências e alertas
+## Badge de variação sobre o mês anterior
+
+Cada um dos quatro números do resumo (Realizado, Renda, Despesa, Previsto) pode exibir um selo
+comparando com o mesmo número no mês anterior. A regra é igual para os quatro — não existe
+indicador que apareça em uns e não em outros por causa da regra em si (só por não haver dado no
+mês anterior, caso coberto abaixo):
+
+- Quando o mês anterior tem base **igual ou maior que R$ 50,00** para aquele número, o selo mostra
+  variação percentual.
+- Quando a base do mês anterior é **menor que R$ 50,00** (incluindo zero), percentual não é
+  significativo — o selo mostra a variação absoluta em reais.
+- Quando o número atual e o do mês anterior são **os dois zero**, não há nada para comparar e o
+  selo não aparece.
+
+A cor do selo segue o significado financeiro, não o sinal aritmético: aumento de despesa é
+atenção (tom vinho); aumento de renda, de realizado e de previsto é positivo (tom verde).
+
+## Pendências
 
 "Pendências" lista despesas única/mensal e rendas do período que ainda não têm movimentação (de
 pagamento ou de recebimento, respectivamente) na competência, misturadas numa única lista ordenada
 por data — vencimento para despesa, dia agendado de recebimento para renda.
 
-"Alertas" deriva das mesmas pendências: entra quem vence/deveria receber em até 7 dias a partir de
-hoje, incluindo o que já passou do prazo sem pagamento ou recebimento.
+Cada pendência carrega um nível de criticidade, calculado a partir da distância até hoje:
+**vencida** (prazo já passou sem pagamento/recebimento), **vence em breve** (vence ou deveria
+receber em até 7 dias a partir de hoje, incluindo o que já venceu) ou **no prazo** (mais de 7 dias
+à frente). O nível é só um estado visual da própria linha — não existe mais uma seção separada de
+"Alertas" com os mesmos itens: era a mesma informação repetida em dois lugares. O cabeçalho do card
+soma quantos itens estão vencidos ou vencendo em breve.
+
+Cada pendência de despesa tem uma ação para marcar como paga diretamente da lista, sem sair da
+tela. A ação abre o mesmo formulário e aciona o mesmo serviço de pagamento usado na tela de
+Despesas ([ADR 0012](../adr/0012-pagamento-de-despesa-como-movimentacao.md)) — nenhuma regra nova
+de pagamento é criada aqui, e nada muda no formato da movimentação gerada. Depois da ação, resumo,
+evolução do saldo, categorias e contribuição por pessoa do período refletem o pagamento. Isso
+significa que a tela deixa de ser só leitura: ela dispara uma ação sobre despesa existente, embora
+continue sem guardar dado próprio (nenhuma informação nasce ou vive só no dashboard).
+
+## Individual x Conjunta
+
+Só existe em modo Individual. Divide o total de despesa do usuário autenticado (que em modo
+Individual já mistura individual + conjunta, ver "Modo de visualização") entre as duas partes:
+quanto é despesa individual dele e quanto é despesa conjunta. Usa o mesmo universo de despesa já
+filtrado do resumo — não é um cálculo novo, é outro agrupamento do mesmo total.
+
+## Categorias
+
+"Despesa por categoria" e "Renda por categoria" agrupam pelo total de cada categoria no período.
+Categoria que representa menos de **5% do total do card** entra numa linha agregada "Outras", em
+vez de poluir a lista com percentuais irrelevantes — só quando há pelo menos duas categorias abaixo
+desse piso (uma só, sozinha, não é agrupada). "Despesa por categoria" também mostra, por categoria,
+quanto já está pago e quanto ainda está pendente, na competência do período — mesmo critério de
+pagamento usado no resto da tela (existência de movimentação na competência).
+
+## Despesa por forma de pagamento
+
+Mesmo princípio de "Despesa por categoria", agrupando pela forma de pagamento em vez da categoria:
+para despesa parcelada, a forma de pagamento é a própria (o cartão da compra); para única/mensal, é
+a forma usada na movimentação de pagamento da competência. Despesa única/mensal ainda pendente na
+competência não tem forma de pagamento a resolver e entra num grupo "Sem forma definida".
+
+## Tendência de 6 meses
+
+Mostra renda x despesa total dos últimos 6 meses (incluindo o mês selecionado), no mesmo modo
+(Individual/Casal) da tela. Ao contrário dos demais cards, **não é afetado pelos filtros de
+despesa nem pela busca** — é uma visão histórica de totais brutos por mês, não da competência
+filtrada; filtrar um mês por categoria ou forma de pagamento não faria sentido aplicado aos outros
+5 meses da tendência.
 
 ## Contribuição por pessoa
 
@@ -72,19 +139,35 @@ Só existe em modo Casal. Duas medidas, por usuário:
   `movimentação → forma de pagamento → conta → usuário`, mesma regra de
   [movimentacoes.md](movimentacoes.md#pagamento-de-despesa).
 
+Este card sempre mostra os dois usuários lado a lado — não é afetado pelo filtro de pessoa descrito
+abaixo, porque ele já É a quebra por pessoa.
+
 ## Filtros
 
 O dashboard aceita os mesmos quatro filtros de despesa definidos em
 [despesas.md](despesas.md#filtros): categoria, tipo de lançamento, forma de
-pagamento e status de pagamento. Eles restringem o universo de despesas
-usado no cálculo de saldo, pendências, alertas, despesa por categoria e
-contribuição por pessoa — dentro do período e do modo (Individual/Casal) já
-selecionados. Não alteram a definição de saldo, o corte realizado/projetado
-nem nenhuma outra regra já descrita neste documento; apenas reduzem o
-conjunto de despesas considerado.
+pagamento e status de pagamento, mais dois filtros exclusivos desta tela:
 
-Renda não é afetada por esses filtros — eles são exclusivamente sobre
-despesa.
+- **Busca por descrição da despesa**: substring, sem diferenciar maiúsculas/minúsculas. Existe só
+  no dashboard — a tela de Despesas não ganha esse filtro nesta tarefa.
+- **Pessoa** (só aparece em modo Casal): `ambos` (padrão) ou um dos dois usuários fixos.
+
+Escopo dos quatro filtros de despesa + busca — afetam, dentro do período e do modo já
+selecionados: resumo (lado despesa: Despesa, Previsto e, por consequência, Realizado), Despesa por
+categoria, Despesa por forma de pagamento, Individual x Conjunta e a parte de despesa das
+Pendências. **Não afetam**: Renda por categoria, Contribuição por pessoa e Tendência de 6 meses —
+nenhum dos três é despesa filtrável, e o segundo e o terceiro têm motivo próprio (ver as seções
+acima). Não alteram a definição de Realizado/Previsto, o corte entre os dois, nem nenhuma outra
+regra já descrita neste documento; apenas reduzem o conjunto de despesas considerado.
+
+Escopo do filtro de pessoa: renda em toda a tela é restrita diretamente por dono (`usuario_id`) —
+sem ambiguidade, renda sempre tem um usuário. Despesa é mais sutil: despesa conjunta **pendente**
+não tem dono até ser paga (contexto conjunta é dos dois, e "quem pagou" só existe a partir da
+movimentação de pagamento — mesmo princípio do card Contribuição por pessoa, ADR 0002). Por isso o
+filtro de pessoa restringe, do lado despesa, só a parte **realizada** (o que aquela pessoa
+efetivamente pagou, entrando em Realizado e na linha realizada da evolução do saldo) — despesa
+conjunta pendente continua aparecendo para os dois usuários, em Despesa por categoria, Despesa por
+forma de pagamento, Individual x Conjunta e Pendências, independentemente da pessoa selecionada.
 
 ## Questões em aberto
 
@@ -92,7 +175,7 @@ despesa.
   redesenhada (mesma lacuna de [despesas.md](despesas.md) e
   [formas-pagamento.md](formas-pagamento.md)).
 - **Vencimento de despesa parcelada.** Depende da fatura ser redesenhada; até lá, parcelada não
-  aparece em Pendências, Alertas nem na evolução diária do saldo.
+  aparece em Pendências nem na evolução diária do saldo.
 
 ---
 

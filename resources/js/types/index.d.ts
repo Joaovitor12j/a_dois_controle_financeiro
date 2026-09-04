@@ -126,6 +126,7 @@ export interface FiltrosDespesaValores {
     tipo?: TipoLancamentoDespesa;
     forma_pagamento_id?: string;
     status?: StatusPagamentoFiltro;
+    busca?: string;
 }
 
 export interface FormaPagamentoResumo {
@@ -148,16 +149,24 @@ export type Toast = {
 };
 
 export type ModoVisualizacao = 'individual' | 'casal';
+export type StatusPeriodo = 'atual' | 'passado' | 'futuro';
+
+export interface VariacaoDelta {
+    tipo: 'percentual' | 'absoluto';
+    valor: number;
+}
 
 export interface ResumoPeriodo {
     saldo: number;
-    saldoDeltaPct: number | null;
+    saldoDelta: VariacaoDelta | null;
     receita: number;
-    receitaDeltaPct: number | null;
+    receitaDelta: VariacaoDelta | null;
     despesa: number;
-    despesaDeltaPct: number | null;
+    despesaDelta: VariacaoDelta | null;
     resultado: number;
-    resultadoDeltaPct: number | null;
+    resultadoDelta: VariacaoDelta | null;
+    statusPeriodo: StatusPeriodo;
+    temDespesaParcelada: boolean;
 }
 
 export interface PontoSerieSaldo {
@@ -166,26 +175,49 @@ export interface PontoSerieSaldo {
     tipo: 'realizado' | 'projetado';
 }
 
-export interface CategoriaResumoItem {
-    nome: string;
-    cor: string;
+export interface EventoDia {
+    descricao: string;
     valor: number;
 }
+
+export interface SerieSaldo {
+    serie: PontoSerieSaldo[];
+    eventosPorDia: Record<number, EventoDia[]>;
+}
+
+export interface CategoriaResumoItem {
+    id: string | null;
+    nome: string;
+    cor: string;
+    icone: string;
+    valor: number;
+    valorPago?: number;
+    valorPendente?: number;
+}
+
+export interface FormaPagamentoResumoItem {
+    nome: string;
+    valor: number;
+}
+
+export interface IndividualXConjunta {
+    individual: number;
+    conjunta: number;
+}
+
+export type NivelPendencia = 'vencida' | 'vence_em_breve' | 'no_prazo';
 
 export interface PendenciaItem {
     id: string;
     tipo: 'despesa' | 'renda';
     descricao: string;
     contexto: ContextoDespesa | null;
+    tipoLancamento: TipoLancamentoDespesa | null;
+    categoriaDespesaId: string | null;
     data: string;
     valor: number;
-}
-
-export interface AlertaItem {
-    titulo: string;
-    detalhe: string;
-    valor: number;
-    nivel: 'vinho' | 'ouro';
+    dias: number;
+    nivel: NivelPendencia;
 }
 
 export interface ContribuicaoPessoaItem {
@@ -200,22 +232,39 @@ export interface ContribuicaoPorPessoa {
     despesa: ContribuicaoPessoaItem[];
 }
 
+export interface TendenciaMesItem {
+    competencia: string;
+    receita: number;
+    despesa: number;
+}
+
+export interface UsuarioCasal {
+    id: string;
+    nome: string;
+    cor: string;
+}
+
 export interface DashboardProps {
     modo: ModoVisualizacao;
     competencia: string;
     despesaRotulo: string;
     resumo: ResumoPeriodo;
-    serieSaldo: PontoSerieSaldo[];
+    serieSaldo?: SerieSaldo;
     despesaPorCategoria: CategoriaResumoItem[];
     receitaPorCategoria: CategoriaResumoItem[];
+    despesaPorFormaPagamento: FormaPagamentoResumoItem[];
+    individualXConjunta: IndividualXConjunta | null;
     pendencias: PendenciaItem[];
-    alertas: AlertaItem[];
-    contribuicao: ContribuicaoPorPessoa | null;
+    contribuicao?: ContribuicaoPorPessoa | null;
+    tendencia6Meses?: TendenciaMesItem[];
+    primeiroUso: boolean;
+    usuariosCasal: UsuarioCasal[];
     categoriasDespesa: CategoriaDespesa[];
     formasPagamento: FormaPagamento[];
     contas: ContaResumo[];
     categoriasRenda: CategoriaRenda[];
     filtros: FiltrosDespesaValores;
+    pessoaId: string | null;
     formasPagamentoFiltro: FormaPagamentoResumo[];
 }
 
