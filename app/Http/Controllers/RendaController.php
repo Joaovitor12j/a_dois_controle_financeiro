@@ -12,6 +12,8 @@ use App\Models\Movimentacao;
 use App\Models\Renda;
 use App\Services\Financeiro\RendaService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,11 +25,13 @@ class RendaController extends Controller
         private readonly CalculadoraOcorrenciaRenda $calculadora,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $this->authorize('viewAny', Renda::class);
 
-        $competencia = Competencia::deData(now());
+        $competencia = $request->has(['ano', 'mes'])
+            ? Competencia::deAnoMes((int) $request->query('ano'), (int) $request->query('mes'))
+            : Competencia::deData(now());
 
         $ocorrencias = Renda::with([
             'categoriaRenda',
@@ -68,7 +72,7 @@ class RendaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda criada com sucesso.']);
 
-        return Redirect::route('rendas.index');
+        return $this->voltarParaListagem($request);
     }
 
     public function update(UpdateRendaRequest $request, Renda $renda): RedirectResponse
@@ -79,10 +83,10 @@ class RendaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda atualizada com sucesso.']);
 
-        return Redirect::route('rendas.index');
+        return $this->voltarParaListagem($request);
     }
 
-    public function destroy(Renda $renda): RedirectResponse
+    public function destroy(Request $request, Renda $renda): RedirectResponse
     {
         $this->authorize('delete', $renda);
 
@@ -90,7 +94,7 @@ class RendaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda excluída com sucesso.']);
 
-        return Redirect::route('rendas.index');
+        return $this->voltarParaListagem($request);
     }
 
     public function marcarComoRecebida(MarcarComoRecebidaRendaRequest $request, Renda $renda): RedirectResponse
@@ -107,7 +111,7 @@ class RendaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Renda marcada como recebida.']);
 
-        return Redirect::route('rendas.index');
+        return $this->voltarParaListagem($request);
     }
 
     public function desfazerRecebimento(DesfazerRecebimentoRendaRequest $request, Renda $renda): RedirectResponse
@@ -118,6 +122,11 @@ class RendaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Recebimento desfeito.']);
 
-        return Redirect::route('rendas.index');
+        return $this->voltarParaListagem($request);
+    }
+
+    private function voltarParaListagem(Request $request): RedirectResponse
+    {
+        return Redirect::route('rendas.index', Arr::only($request->query(), ['ano', 'mes']));
     }
 }

@@ -23,8 +23,10 @@ export default function ConfirmarDesfazerRecebimento({
             return;
         }
 
+        const [ano, mes] = competencia.split('-');
+
         router.patch(
-            route('rendas.desfazer-recebimento', renda.id),
+            route('rendas.desfazer-recebimento', { renda: renda.id, ano, mes }),
             { competencia },
             {
                 preserveScroll: true,

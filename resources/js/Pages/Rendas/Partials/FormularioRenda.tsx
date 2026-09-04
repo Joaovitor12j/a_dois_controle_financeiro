@@ -45,12 +45,14 @@ export default function FormularioRenda({
     renda,
     contas,
     categoriasRenda,
+    competencia,
     aberto,
     aoFechar,
 }: {
     renda: Renda | null;
     contas: ContaResumo[];
     categoriasRenda: CategoriaRenda[];
+    competencia: string;
     aberto: boolean;
     aoFechar: () => void;
 }) {
@@ -101,12 +103,13 @@ export default function FormularioRenda({
     const submit: FormEventHandler = (evento) => {
         evento.preventDefault();
 
+        const [ano, mes] = competencia.split('-');
         const opcoes = { preserveScroll: true, onSuccess: aoFechar };
 
         if (renda) {
-            put(route('rendas.update', renda.id), opcoes);
+            put(route('rendas.update', { renda: renda.id, ano, mes }), opcoes);
         } else {
-            post(route('rendas.store'), opcoes);
+            post(route('rendas.store', { ano, mes }), opcoes);
         }
     };
 

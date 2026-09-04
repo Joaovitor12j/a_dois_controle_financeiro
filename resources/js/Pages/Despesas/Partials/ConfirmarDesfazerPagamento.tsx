@@ -1,18 +1,20 @@
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import type { Despesa } from '@/types';
+import type { ContextoDespesa, Despesa } from '@/types';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function ConfirmarDesfazerPagamento({
     despesa,
     competencia,
+    contexto,
     aberto,
     aoFechar,
 }: {
     despesa: Despesa | null;
     competencia: string;
+    contexto: ContextoDespesa;
     aberto: boolean;
     aoFechar: () => void;
 }) {
@@ -23,12 +25,23 @@ export default function ConfirmarDesfazerPagamento({
             return;
         }
 
-        router.patch(route('despesas.desfazer-pagamento', despesa.id), { competencia }, {
-            preserveScroll: true,
-            onStart: () => setProcessando(true),
-            onFinish: () => setProcessando(false),
-            onSuccess: aoFechar,
-        });
+        const [ano, mes] = competencia.split('-');
+
+        router.patch(
+            route('despesas.desfazer-pagamento', {
+                despesa: despesa.id,
+                ano,
+                mes,
+                contexto,
+            }),
+            { competencia },
+            {
+                preserveScroll: true,
+                onStart: () => setProcessando(true),
+                onFinish: () => setProcessando(false),
+                onSuccess: aoFechar,
+            },
+        );
     };
 
     return (

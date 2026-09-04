@@ -190,6 +190,8 @@ export default function Dashboard({
                 despesa={null}
                 categoriasDespesa={categoriasDespesa}
                 formasPagamento={formasPagamento}
+                competencia={competencia}
+                contexto={modo === 'casal' ? 'conjunta' : 'individual'}
                 aberto={novaDespesa.aberto}
                 aoFechar={() =>
                     setNovaDespesa((atual) => ({ ...atual, aberto: false }))
@@ -201,6 +203,7 @@ export default function Dashboard({
                 renda={null}
                 contas={contas}
                 categoriasRenda={categoriasRenda}
+                competencia={competencia}
                 aberto={novaRenda.aberto}
                 aoFechar={() => setNovaRenda((atual) => ({ ...atual, aberto: false }))}
             />

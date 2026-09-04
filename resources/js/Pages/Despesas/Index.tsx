@@ -423,12 +423,16 @@ export default function Index({
                 despesa={formulario.despesa}
                 categoriasDespesa={categoriasDespesa}
                 formasPagamento={formasPagamento}
+                competencia={competencia}
+                contexto={contexto}
                 aberto={formulario.aberto}
                 aoFechar={fecharFormulario}
             />
 
             <ConfirmarExclusaoDespesa
                 despesa={exclusao.despesa}
+                competencia={competencia}
+                contexto={contexto}
                 aberto={exclusao.aberto}
                 aoFechar={fecharExclusao}
             />
@@ -437,6 +441,7 @@ export default function Index({
                 key={`${marcarComoPaga.despesa?.id ?? 'nenhuma'}-${marcarComoPaga.competencia}`}
                 despesa={marcarComoPaga.despesa}
                 competencia={marcarComoPaga.competencia}
+                contexto={contexto}
                 formasPagamento={formasPagamento}
                 aberto={marcarComoPaga.aberto}
                 aoFechar={fecharMarcarComoPaga}
@@ -445,6 +450,7 @@ export default function Index({
             <ConfirmarDesfazerPagamento
                 despesa={desfazerPagamento.despesa}
                 competencia={desfazerPagamento.competencia}
+                contexto={contexto}
                 aberto={desfazerPagamento.aberto}
                 aoFechar={fecharDesfazerPagamento}
             />

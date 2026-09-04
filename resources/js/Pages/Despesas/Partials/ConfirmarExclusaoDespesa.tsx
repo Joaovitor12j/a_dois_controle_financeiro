@@ -1,16 +1,20 @@
 import DangerButton from '@/Components/DangerButton';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
-import type { Despesa } from '@/types';
+import type { ContextoDespesa, Despesa } from '@/types';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function ConfirmarExclusaoDespesa({
     despesa,
+    competencia,
+    contexto,
     aberto,
     aoFechar,
 }: {
     despesa: Despesa | null;
+    competencia: string;
+    contexto: ContextoDespesa;
     aberto: boolean;
     aoFechar: () => void;
 }) {
@@ -21,12 +25,22 @@ export default function ConfirmarExclusaoDespesa({
             return;
         }
 
-        router.delete(route('despesas.destroy', despesa.id), {
-            preserveScroll: true,
-            onStart: () => setExcluindo(true),
-            onFinish: () => setExcluindo(false),
-            onSuccess: aoFechar,
-        });
+        const [ano, mes] = competencia.split('-');
+
+        router.delete(
+            route('despesas.destroy', {
+                despesa: despesa.id,
+                ano,
+                mes,
+                contexto,
+            }),
+            {
+                preserveScroll: true,
+                onStart: () => setExcluindo(true),
+                onFinish: () => setExcluindo(false),
+                onSuccess: aoFechar,
+            },
+        );
     };
 
     return (

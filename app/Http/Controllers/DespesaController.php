@@ -17,6 +17,8 @@ use App\Models\FormaPagamento;
 use App\Services\Financeiro\DespesaService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -93,7 +95,7 @@ class DespesaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Despesa criada com sucesso.']);
 
-        return Redirect::route('despesas.index');
+        return $this->voltarParaListagem($request);
     }
 
     public function update(UpdateDespesaRequest $request, Despesa $despesa): RedirectResponse
@@ -104,10 +106,10 @@ class DespesaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Despesa atualizada com sucesso.']);
 
-        return Redirect::route('despesas.index');
+        return $this->voltarParaListagem($request);
     }
 
-    public function destroy(Despesa $despesa): RedirectResponse
+    public function destroy(Request $request, Despesa $despesa): RedirectResponse
     {
         $this->authorize('delete', $despesa);
 
@@ -115,7 +117,7 @@ class DespesaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Despesa excluída com sucesso.']);
 
-        return Redirect::route('despesas.index');
+        return $this->voltarParaListagem($request);
     }
 
     public function marcarComoPaga(MarcarComoPagaDespesaRequest $request, Despesa $despesa): RedirectResponse
@@ -131,7 +133,7 @@ class DespesaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Despesa marcada como paga.']);
 
-        return Redirect::route('despesas.index');
+        return $this->voltarParaListagem($request);
     }
 
     public function desfazerPagamento(DesfazerPagamentoDespesaRequest $request, Despesa $despesa): RedirectResponse
@@ -142,6 +144,11 @@ class DespesaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pagamento desfeito.']);
 
-        return Redirect::route('despesas.index');
+        return $this->voltarParaListagem($request);
+    }
+
+    private function voltarParaListagem(Request $request): RedirectResponse
+    {
+        return Redirect::route('despesas.index', Arr::only($request->query(), ['ano', 'mes', 'contexto']));
     }
 }

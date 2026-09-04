@@ -1,28 +1,68 @@
-import type { OcorrenciaRenda, TipoRecorrencia } from '@/types';
+import type { OcorrenciaRenda, Renda } from '@/types';
 
 const formatadorDeMoeda = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
 });
 
-const rotuloTipoRecorrencia: Record<TipoRecorrencia, string> = {
-    unica: 'Única',
-    mensal: 'Mensal',
-};
+const MES_ABREV = [
+    'jan',
+    'fev',
+    'mar',
+    'abr',
+    'mai',
+    'jun',
+    'jul',
+    'ago',
+    'set',
+    'out',
+    'nov',
+    'dez',
+];
 
-const corTipoRecorrencia: Record<TipoRecorrencia, string> = {
-    unica: 'bg-tinta/10 text-tinta',
-    mensal: 'bg-ouro/20 text-ouro',
-};
+function formatarDataCurta(data: string): string {
+    const [, mes, dia] = data.slice(0, 10).split('-');
 
-function formatarData(data: string | null): string | null {
-    if (!data) {
-        return null;
+    return `${dia}/${mes}`;
+}
+
+function mesAno(data: string): string {
+    const [ano, mes] = data.slice(0, 7).split('-');
+
+    return `${MES_ABREV[Number(mes) - 1]}/${ano}`;
+}
+
+export function diaPrevisto(renda: Renda): number {
+    if (renda.tipo_recorrencia === 'unica') {
+        return Number(renda.data_recebimento!.slice(8, 10));
     }
 
-    const [ano, mes, dia] = data.slice(0, 10).split('-');
+    return renda.dia_recebimento!;
+}
 
-    return `${dia}/${mes}/${ano}`;
+export function estaAtrasada(
+    renda: Renda,
+    recebida: boolean,
+    competencia: string,
+): boolean {
+    if (recebida) {
+        return false;
+    }
+
+    const hoje = new Date();
+    const [ano, mes] = competencia.split('-').map(Number);
+    const indice = ano * 12 + mes;
+    const indiceHoje = hoje.getFullYear() * 12 + (hoje.getMonth() + 1);
+
+    if (indice < indiceHoje) {
+        return true;
+    }
+
+    if (indice > indiceHoje) {
+        return false;
+    }
+
+    return diaPrevisto(renda) < hoje.getDate();
 }
 
 function BotaoEditar({
@@ -104,140 +144,227 @@ export default function ItemOcorrenciaRenda({
     aoMarcarComoRecebida: () => void;
     aoDesfazerRecebimento: () => void;
 }) {
-    const { renda, recebida, movimentacao } = ocorrencia;
+    const { renda, recebida, movimentacao, formas_pagamento_elegiveis } =
+        ocorrencia;
+
+    const atrasada = estaAtrasada(renda, recebida, ocorrencia.competencia);
+
+    const tipoLabel = renda.tipo_recorrencia === 'unica' ? 'Única' : 'Mensal';
+
+    let quando: string;
+    if (recebida && movimentacao) {
+        quando = `Recebida em ${formatarDataCurta(movimentacao.data)}`;
+    } else if (renda.tipo_recorrencia === 'unica') {
+        quando = `Recebimento ${formatarDataCurta(renda.data_recebimento!)}`;
+    } else {
+        const sufixo = renda.data_fim
+            ? ` · até ${mesAno(renda.data_fim)}`
+            : ` · desde ${mesAno(renda.data_inicio!)}`;
+        quando = `Todo dia ${renda.dia_recebimento}${sufixo}`;
+    }
+
+    let statusLabel: string;
+    let statusClasse: string;
+    let statusPontoClasse: string;
+    if (recebida) {
+        statusLabel = 'Recebida';
+        statusClasse = 'bg-verde/10 text-verde-escuro';
+        statusPontoClasse = 'bg-verde';
+    } else if (atrasada) {
+        statusLabel = 'Atrasada';
+        statusClasse = 'bg-vinho text-papel';
+        statusPontoClasse = 'bg-papel';
+    } else {
+        statusLabel = 'A receber';
+        statusClasse = 'bg-ouro/20 text-ouro';
+        statusPontoClasse = 'bg-ouro';
+    }
+
+    const formaUsada = recebida ? movimentacao?.forma_pagamento : null;
+    let formaRotulo: string;
+    let formaClasse = 'text-tinta-claro';
+    if (recebida) {
+        formaRotulo = formaUsada?.nome ?? '—';
+    } else if (formas_pagamento_elegiveis.length === 0) {
+        formaRotulo = 'nenhuma forma recebe renda';
+        formaClasse = 'text-vinho';
+    } else if (formas_pagamento_elegiveis.length === 1) {
+        formaRotulo = formas_pagamento_elegiveis[0].nome;
+    } else {
+        formaRotulo = `${formas_pagamento_elegiveis.length} formas elegíveis`;
+    }
+
+    const contaNome = recebida
+        ? (movimentacao?.forma_pagamento?.conta?.nome ?? renda.conta.nome)
+        : renda.conta.nome;
+
+    let divergencia = '';
+    if (recebida && movimentacao) {
+        const diferenca = movimentacao.valor - renda.valor;
+        divergencia =
+            diferenca === 0
+                ? 'igual ao programado'
+                : `${formatadorDeMoeda.format(Math.abs(diferenca) / 100)} ${diferenca > 0 ? 'acima' : 'abaixo'} do programado ${formatadorDeMoeda.format(renda.valor / 100)}`;
+    }
+
+    let cardClasse =
+        'flex flex-col self-start rounded-xl border border-tinta/10 bg-white shadow-sm shadow-tinta/5 transition duration-200 hover:border-tinta/20 hover:shadow-md';
+    if (recebida) {
+        cardClasse =
+            'flex flex-col self-start rounded-xl border border-tinta/[0.08] bg-white/60 transition duration-200 hover:border-tinta/15';
+    } else if (atrasada) {
+        cardClasse =
+            'flex flex-col self-start rounded-xl border border-tinta/10 border-l-[3px] border-l-vinho bg-vinho/5 shadow-sm shadow-tinta/5 transition duration-200 hover:border-tinta/20 hover:shadow-md';
+    }
 
     return (
-        <article className="flex flex-col gap-3 rounded-xl border border-tinta/10 bg-white p-5 shadow-sm shadow-tinta/5">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <h2 className="truncate font-display text-lg font-semibold text-tinta">
-                        {renda.descricao}
-                    </h2>
-
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <span
-                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${corTipoRecorrencia[renda.tipo_recorrencia]}`}
-                        >
-                            {rotuloTipoRecorrencia[renda.tipo_recorrencia]}
-                        </span>
-
-                        {renda.categoria_renda && (
-                            <span className="inline-flex items-center gap-1.5 text-xs text-tinta-claro">
-                                <span
-                                    aria-hidden="true"
-                                    className="h-2 w-2 rounded-full"
-                                    style={{
-                                        backgroundColor:
-                                            renda.categoria_renda.cor,
-                                    }}
-                                />
+        <article className={cardClasse}>
+            <div className={recebida ? 'p-4 pb-3' : 'p-5 pb-3.5'}>
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="h-[7px] w-[7px] shrink-0 rounded-full"
+                                style={{
+                                    backgroundColor: renda.categoria_renda.cor,
+                                }}
+                            />
+                            <span
+                                className={`truncate text-xs ${recebida ? 'text-tinta-claro/80' : 'text-tinta-claro'}`}
+                            >
                                 {renda.categoria_renda.nome}
                             </span>
-                        )}
+                        </div>
 
-                        <span
-                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                recebida
-                                    ? 'bg-verde/10 text-verde'
-                                    : 'bg-tinta/10 text-tinta-claro'
-                            }`}
+                        <h3
+                            className={`mt-1 truncate font-display font-semibold ${recebida ? 'text-[17px] text-tinta-claro' : 'text-lg text-tinta'}`}
                         >
-                            {recebida ? 'Recebida' : 'Pendente'}
-                        </span>
+                            {renda.descricao}
+                        </h3>
                     </div>
+
+                    <span
+                        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${statusClasse}`}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className={`h-[5px] w-[5px] shrink-0 rounded-full ${statusPontoClasse}`}
+                        />
+                        {statusLabel}
+                    </span>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1">
-                    <BotaoEditar rotulo="Editar renda" aoClicar={aoEditar} />
-                    <BotaoExcluir rotulo="Excluir renda" aoClicar={aoExcluir} />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-tinta-claro/70">
+                        {tipoLabel}
+                    </span>
+                    <span
+                        className={`text-xs ${recebida ? 'text-tinta-claro/80' : 'text-tinta-claro'}`}
+                    >
+                        {quando}
+                    </span>
                 </div>
             </div>
 
-            <dl className="grid grid-cols-2 gap-3 border-t border-tinta/10 pt-3">
+            <div
+                className={`flex items-end justify-between gap-3.5 border-t border-tinta/[0.08] ${recebida ? 'px-4 py-3.5' : 'px-5 py-3.5'}`}
+            >
                 <div>
-                    <dt className="text-xs text-tinta-claro">Valor</dt>
-                    <dd className="text-sm font-medium tabular-nums text-tinta">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-tinta-claro">
+                        {recebida ? 'Recebido' : 'Valor programado'}
+                    </p>
+                    <p
+                        className={`mt-0.5 font-display font-bold leading-none tabular-nums ${recebida ? 'text-[22px] text-verde-escuro' : 'text-2xl text-tinta'}`}
+                    >
                         {formatadorDeMoeda.format(
                             (recebida && movimentacao
                                 ? movimentacao.valor
                                 : renda.valor) / 100,
                         )}
-                    </dd>
+                    </p>
+                    {recebida && (
+                        <p className="mt-1 text-[11.5px] leading-tight text-tinta-claro/70">
+                            {divergencia}
+                        </p>
+                    )}
                 </div>
 
-                {renda.tipo_recorrencia === 'unica' && (
-                    <div>
-                        <dt className="text-xs text-tinta-claro">
-                            Recebimento previsto
-                        </dt>
-                        <dd className="text-sm font-medium text-tinta">
-                            {formatarData(renda.data_recebimento) ?? '—'}
-                        </dd>
-                    </div>
+                <div className="min-w-0 text-right">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-tinta-claro">
+                        {recebida ? 'Caiu em' : 'Cai em'}
+                    </p>
+                    <p className="mt-0.5 truncate text-sm font-medium text-tinta">
+                        {contaNome}
+                    </p>
+                    <p className={`mt-0.5 truncate text-xs ${formaClasse}`}>
+                        {formaRotulo}
+                    </p>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 border-t border-tinta/[0.08] px-4 py-2.5">
+                {recebida ? (
+                    <button
+                        type="button"
+                        onClick={aoDesfazerRecebimento}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12.5px] font-medium text-tinta-claro transition duration-150 ease-in-out hover:bg-papel hover:text-tinta"
+                    >
+                        <svg
+                            aria-hidden="true"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            className="h-[15px] w-[15px]"
+                        >
+                            <path
+                                d="M4 5.5v4h4"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <path
+                                d="M16.5 12a6.5 6.5 0 0 0-11-4.6L4 9"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                        Desfazer recebimento
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={aoMarcarComoRecebida}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-verde/35 px-3.5 py-1.5 text-sm font-semibold text-verde-escuro transition duration-150 ease-in-out hover:border-verde hover:bg-verde/5"
+                    >
+                        <svg
+                            aria-hidden="true"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            className="h-[15px] w-[15px]"
+                        >
+                            <path
+                                d="M10 4v9M6.5 9.5 10 13l3.5-3.5M4.5 16h11"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                        Registrar recebimento
+                    </button>
                 )}
 
-                {renda.tipo_recorrencia === 'mensal' && (
-                    <div>
-                        <dt className="text-xs text-tinta-claro">
-                            Recebimento previsto
-                        </dt>
-                        <dd className="text-sm font-medium text-tinta">
-                            todo dia {renda.dia_recebimento}
-                        </dd>
-                    </div>
-                )}
-
-                {recebida && movimentacao && (
-                    <div>
-                        <dt className="text-xs text-tinta-claro">
-                            Recebimento
-                        </dt>
-                        <dd className="text-sm font-medium text-tinta">
-                            {formatarData(movimentacao.data) ?? '—'}
-                        </dd>
-                    </div>
-                )}
-
-                {recebida && movimentacao?.forma_pagamento && (
-                    <div>
-                        <dt className="text-xs text-tinta-claro">
-                            Forma de pagamento
-                        </dt>
-                        <dd className="text-sm font-medium text-tinta">
-                            {movimentacao.forma_pagamento.nome}
-                        </dd>
-                    </div>
-                )}
-
-                {recebida && movimentacao?.forma_pagamento?.conta?.usuario && (
-                    <div>
-                        <dt className="text-xs text-tinta-claro">
-                            Recebido por
-                        </dt>
-                        <dd className="text-sm font-medium text-tinta">
-                            {movimentacao.forma_pagamento.conta.usuario.nome}
-                        </dd>
-                    </div>
-                )}
-            </dl>
-
-            {recebida ? (
-                <button
-                    type="button"
-                    onClick={aoDesfazerRecebimento}
-                    className="rounded-lg border border-tinta/15 px-3 py-1.5 text-sm font-medium text-tinta-claro transition-colors hover:bg-papel hover:text-tinta"
-                >
-                    Desfazer recebimento
-                </button>
-            ) : (
-                <button
-                    type="button"
-                    onClick={aoMarcarComoRecebida}
-                    className="rounded-lg bg-verde/10 px-3 py-1.5 text-sm font-medium text-verde-escuro transition-colors hover:bg-verde/20"
-                >
-                    Marcar como recebida
-                </button>
-            )}
+                <div className="flex shrink-0 items-center gap-0.5">
+                    <BotaoEditar rotulo="Editar renda" aoClicar={aoEditar} />
+                    <BotaoExcluir
+                        rotulo="Excluir renda"
+                        aoClicar={aoExcluir}
+                    />
+                </div>
+            </div>
         </article>
     );
 }

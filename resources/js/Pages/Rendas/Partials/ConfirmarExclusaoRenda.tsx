@@ -7,10 +7,12 @@ import { useState } from 'react';
 
 export default function ConfirmarExclusaoRenda({
     renda,
+    competencia,
     aberto,
     aoFechar,
 }: {
     renda: Renda | null;
+    competencia: string;
     aberto: boolean;
     aoFechar: () => void;
 }) {
@@ -21,7 +23,9 @@ export default function ConfirmarExclusaoRenda({
             return;
         }
 
-        router.delete(route('rendas.destroy', renda.id), {
+        const [ano, mes] = competencia.split('-');
+
+        router.delete(route('rendas.destroy', { renda: renda.id, ano, mes }), {
             preserveScroll: true,
             onStart: () => setExcluindo(true),
             onFinish: () => setExcluindo(false),

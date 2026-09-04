@@ -799,6 +799,34 @@ it('exclui a própria despesa', function () {
     expect(Despesa::withoutGlobalScope(DespesaScope::class)->find($despesa->id))->toBeNull();
 });
 
+it('preserva ano, mes e contexto da navegação ao redirecionar após excluir', function () {
+    $eu = Usuario::factory()->create();
+    $categoria = categoriaDespesaDeTeste();
+    $despesa = criarDespesaUnica($eu, $categoria);
+
+    $this->actingAs($eu)
+        ->delete(route('despesas.destroy', [
+            'despesa' => $despesa,
+            'ano' => 2026,
+            'mes' => 3,
+            'contexto' => 'individual',
+        ]))
+        ->assertRedirect(route('despesas.index', ['ano' => 2026, 'mes' => 3, 'contexto' => 'individual']));
+});
+
+it('não confunde o contexto da despesa no payload com o contexto de navegação ao redirecionar', function () {
+    $eu = Usuario::factory()->create();
+    $categoria = categoriaDespesaDeTeste();
+    $despesa = criarDespesaUnica($eu, $categoria, ['contexto' => 'individual']);
+
+    $this->actingAs($eu)
+        ->put(
+            route('despesas.update', $despesa),
+            payloadAtualizacaoDespesa(payloadDespesaUnica($categoria, ['contexto' => 'conjunta'])),
+        )
+        ->assertRedirect(route('despesas.index'));
+});
+
 it('DespesaService::listar retorna despesas visíveis ao usuário autenticado (individual própria + conjuntas)', function () {
     $eu = Usuario::factory()->create();
     $parceiro = Usuario::factory()->create();

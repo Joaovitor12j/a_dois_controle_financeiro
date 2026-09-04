@@ -8,7 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import SelectInput from '@/Components/SelectInput';
 import TextInput from '@/Components/TextInput';
-import type { Despesa, FormaPagamento } from '@/types';
+import type { ContextoDespesa, Despesa, FormaPagamento } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
@@ -19,12 +19,14 @@ function rotuloFormaPagamento(forma: FormaPagamento): string {
 export default function MarcarComoPagaDespesa({
     despesa,
     competencia,
+    contexto,
     formasPagamento,
     aberto,
     aoFechar,
 }: {
     despesa: Despesa | null;
     competencia: string;
+    contexto: ContextoDespesa;
     formasPagamento: FormaPagamento[];
     aberto: boolean;
     aoFechar: () => void;
@@ -45,13 +47,23 @@ export default function MarcarComoPagaDespesa({
             return;
         }
 
-        patch(route('despesas.marcar-como-paga', despesa.id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                reset();
-                aoFechar();
+        const [ano, mes] = competencia.split('-');
+
+        patch(
+            route('despesas.marcar-como-paga', {
+                despesa: despesa.id,
+                ano,
+                mes,
+                contexto,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    reset();
+                    aoFechar();
+                },
             },
-        });
+        );
     };
 
     const fechar = () => {

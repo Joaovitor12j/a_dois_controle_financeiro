@@ -100,12 +100,16 @@ export default function FormularioDespesa({
     despesa,
     categoriasDespesa,
     formasPagamento,
+    competencia,
+    contexto,
     aberto,
     aoFechar,
 }: {
     despesa: Despesa | null;
     categoriasDespesa: CategoriaDespesa[];
     formasPagamento: FormaPagamento[];
+    competencia: string;
+    contexto: ContextoDespesa;
     aberto: boolean;
     aoFechar: () => void;
 }) {
@@ -219,12 +223,21 @@ export default function FormularioDespesa({
     const submit: FormEventHandler = (evento) => {
         evento.preventDefault();
 
+        const [ano, mes] = competencia.split('-');
         const opcoes = { preserveScroll: true, onSuccess: aoFechar };
 
         if (despesa) {
-            put(route('despesas.update', despesa.id), opcoes);
+            put(
+                route('despesas.update', {
+                    despesa: despesa.id,
+                    ano,
+                    mes,
+                    contexto,
+                }),
+                opcoes,
+            );
         } else {
-            post(route('despesas.store'), opcoes);
+            post(route('despesas.store', { ano, mes, contexto }), opcoes);
         }
     };
 

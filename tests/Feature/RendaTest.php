@@ -390,6 +390,25 @@ it('exclui a própria renda', function () {
     expect(Renda::withoutGlobalScope(DonoScope::class)->find($renda->id))->toBeNull();
 });
 
+it('preserva ano e mes da competência navegada ao redirecionar após excluir', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioRenda($eu);
+    $categoria = categoriaRendaDeTeste();
+    $renda = Renda::withoutGlobalScope(DonoScope::class)->create([
+        'usuario_id' => $eu->id,
+        'conta_id' => $conta->id,
+        'categoria_renda_id' => $categoria->id,
+        'descricao' => 'Salário',
+        'valor' => 100000,
+        'tipo_recorrencia' => TipoRecorrencia::Unica,
+        'data_recebimento' => '2026-08-01',
+    ]);
+
+    $this->actingAs($eu)
+        ->delete(route('rendas.destroy', ['renda' => $renda, 'ano' => 2026, 'mes' => 3]))
+        ->assertRedirect(route('rendas.index', ['ano' => 2026, 'mes' => 3]));
+});
+
 it('lista apenas as ocorrências das rendas do usuário autenticado na competência atual', function () {
     Carbon::setTestNow('2026-08-15');
 
@@ -431,6 +450,40 @@ it('lista apenas as ocorrências das rendas do usuário autenticado na competên
         );
 
     Carbon::setTestNow();
+});
+
+it('navega para outra competência via mes/ano e resolve a ocorrência do período informado', function () {
+    $eu = Usuario::factory()->create();
+    $categoria = categoriaRendaDeTeste();
+    $conta = contaDoUsuarioRenda($eu);
+
+    Renda::withoutGlobalScope(DonoScope::class)->create([
+        'usuario_id' => $eu->id,
+        'conta_id' => $conta->id,
+        'categoria_renda_id' => $categoria->id,
+        'descricao' => 'Aluguel',
+        'valor' => 145000,
+        'tipo_recorrencia' => TipoRecorrencia::Mensal,
+        'dia_recebimento' => 10,
+        'data_inicio' => '2026-01-01',
+    ]);
+
+    $this->actingAs($eu)
+        ->get(route('rendas.index', ['ano' => 2026, 'mes' => 3]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('competencia', '2026-03')
+            ->has('ocorrencias', 1)
+            ->where('ocorrencias.0.competencia', '2026-03')
+        );
+
+    $this->actingAs($eu)
+        ->get(route('rendas.index', ['ano' => 2025, 'mes' => 12]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('competencia', '2025-12')
+            ->has('ocorrencias', 0)
+        );
 });
 
 // Controller: marcarComoRecebida

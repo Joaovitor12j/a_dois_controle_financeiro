@@ -79,6 +79,21 @@ Encerrar uma renda mensal (definir ou antecipar `data_fim`) é bloqueado
 quando a nova data cai antes de uma competência já recebida — mesma regra já
 existente para despesa mensal. Essa validação é de aplicação, não de banco.
 
+## Competência exibida
+
+A tela de rendas navega por competência (mês/ano), da mesma forma que a de
+despesas: sem período informado, mostra a competência atual; com `ano`/`mes`
+informados, mostra as ocorrências daquele período. Não há período além do
+atual persistido em lugar algum — é sempre derivado da navegação.
+
+Para uma ocorrência pendente (sem movimentação de recebimento) na competência
+exibida, o status apresentado ao usuário depende da relação entre essa
+competência e a data corrente: **atrasada** quando a competência exibida já
+fechou (é anterior ao mês corrente); **a receber** quando é o mês corrente e
+o dia previsto de recebimento ainda não chegou, ou quando a competência
+exibida é futura. Isso é derivado a cada exibição, não é um atributo
+persistido da renda nem da movimentação.
+
 ## Questões em aberto
 
 Nenhuma no momento.

@@ -72,7 +72,9 @@ export default function MarcarComoRecebidaRenda({
             return;
         }
 
-        patch(route('rendas.marcar-como-recebida', renda.id), {
+        const [ano, mes] = competencia.split('-');
+
+        patch(route('rendas.marcar-como-recebida', { renda: renda.id, ano, mes }), {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
