@@ -3,7 +3,9 @@
 use App\Domain\ValueObjects\Money;
 use App\Enums\TipoFormaPagamento;
 use App\Models\CartaoCredito;
+use App\Models\CategoriaDespesa;
 use App\Models\Conta;
+use App\Models\Despesa;
 use App\Models\FormaPagamento;
 use App\Models\Movimentacao;
 use App\Models\Scopes\DonoScope;
@@ -72,6 +74,44 @@ it('calcula o saldo total da conta como soma das formas de pagamento não crédi
         ->get(route('contas.index'))
         ->assertInertia(fn (AssertableInertia $pagina) => $pagina
             ->where('contas.0.saldo_total', 7000)
+        );
+});
+
+it('desconta o saldo da conta ao marcar despesa única como paga', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDe($eu, 'Nubank');
+
+    $debito = FormaPagamento::create(['conta_id' => $conta->id, 'nome' => 'Débito', 'tipo' => 'debito']);
+    Movimentacao::create([
+        'forma_pagamento_id' => $debito->id,
+        'valor' => 10000,
+        'data' => '2026-08-01',
+        'is_saldo_inicial' => true,
+    ]);
+
+    $categoria = CategoriaDespesa::create(['nome' => 'Mercado', 'cor' => '#f44336', 'icone' => 'cart']);
+    $despesa = Despesa::create([
+        'usuario_id' => $eu->id,
+        'contexto' => 'individual',
+        'categoria_despesa_id' => $categoria->id,
+        'descricao' => 'Mercado',
+        'valor' => 4000,
+        'tipo_lancamento' => 'unica',
+        'data_vencimento' => '2026-08-10',
+    ]);
+
+    $this->actingAs($eu)
+        ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-08',
+            'forma_pagamento_id' => $debito->id,
+            'data_pagamento' => '2026-08-05',
+        ])
+        ->assertRedirect(route('despesas.index'));
+
+    $this->actingAs($eu)
+        ->get(route('contas.index'))
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->where('contas.0.saldo_total', 6000)
         );
 });
 
