@@ -32,6 +32,7 @@ class UpdateDespesaRequest extends FormRequest
             'categoria_despesa_id' => ['required', 'uuid', Rule::exists('categorias_despesa', 'id')],
             'descricao' => ['required', 'string', 'max:255'],
             'valor' => ['required', 'integer', 'min:1'],
+            'tipo_lancamento' => ['prohibited'],
 
             'data_vencimento' => ['nullable', $ehUnica, 'date'],
             'forma_pagamento_id' => [

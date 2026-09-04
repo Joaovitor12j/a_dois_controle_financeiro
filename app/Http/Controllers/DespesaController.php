@@ -100,7 +100,7 @@ class DespesaController extends Controller
     {
         $this->authorize('update', $despesa);
 
-        $this->despesas->atualizar($despesa, $request->validated());
+        $this->despesas->atualizar($despesa, $request->safe()->except('tipo_lancamento'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Despesa atualizada com sucesso.']);
 
