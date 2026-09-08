@@ -82,6 +82,12 @@ Uma despesa está paga numa competência quando existe uma movimentação com
 esse `despesa_id` e essa `competencia` — nunca mais que uma por combinação
 (ver índice único em [movimentacoes.md](movimentacoes.md)).
 
+O valor pago é informado no momento do pagamento, pré-preenchido com o valor
+da despesa mas editável — pode divergir do valor da despesa (ex.: conta que
+veio com juros, desconto obtido, ajuste de última hora). O valor da despesa
+em si não muda; só o valor da movimentação daquela competência reflete o que
+foi efetivamente pago.
+
 `forma_pagamento_id` deixa de existir em despesa única e despesa mensal.
 Continua existindo, exclusivamente, em despesa **parcelada** — mas ali não é
 mais dado de pagamento: é o cartão da compra, atributo genuíno da despesa,
@@ -103,9 +109,11 @@ competências pagas após criadas, pela ação dedicada de marcar como paga.
 
 ## Filtros
 
-A página de despesas combina quatro filtros, todos opcionais e combináveis
+A página de despesas combina cinco filtros, todos opcionais e combináveis
 entre si (E lógico quando mais de um está ativo):
 
+- **Busca por descrição**: substring da descrição da despesa, sem diferenciar
+  maiúsculas/minúsculas nem acentuação (busca por "cafe" encontra "Café").
 - **Categoria**: restringe às despesas de uma categoria de despesa.
 - **Tipo de lançamento**: restringe a única, mensal ou parcelada.
 - **Forma de pagamento**: restringe pela forma de pagamento associada.
@@ -148,6 +156,7 @@ Implementado em:
 `database/migrations/2026_09_02_000001_add_despesas_data_inicio_primeiro_dia_check.php`,
 `database/migrations/2026_09_02_000002_remove_pagamento_from_despesas_table.php`,
 `database/migrations/2026_09_02_000003_add_competencia_to_movimentacoes_table.php`,
+`database/migrations/2026_09_08_000001_enable_unaccent_extension.php`,
 `app/Models/Despesa.php`, `app/Models/Movimentacao.php`,
 `app/Services/Financeiro/DespesaService.php`,
 `app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`,

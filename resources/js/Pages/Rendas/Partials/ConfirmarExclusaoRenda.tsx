@@ -17,6 +17,7 @@ export default function ConfirmarExclusaoRenda({
     aoFechar: () => void;
 }) {
     const [excluindo, setExcluindo] = useState(false);
+    const [erro, setErro] = useState<string | null>(null);
 
     const excluir = () => {
         if (!renda) {
@@ -27,14 +28,23 @@ export default function ConfirmarExclusaoRenda({
 
         router.delete(route('rendas.destroy', { renda: renda.id, ano, mes }), {
             preserveScroll: true,
-            onStart: () => setExcluindo(true),
+            onStart: () => {
+                setErro(null);
+                setExcluindo(true);
+            },
             onFinish: () => setExcluindo(false),
-            onSuccess: aoFechar,
+            onSuccess: fechar,
+            onError: (errors) => setErro(errors.renda ?? null),
         });
     };
 
+    const fechar = () => {
+        setErro(null);
+        aoFechar();
+    };
+
     return (
-        <Modal show={aberto} onClose={aoFechar} maxWidth="md">
+        <Modal show={aberto} onClose={fechar} maxWidth="md">
             <div className="p-6 sm:p-8">
                 <h2 className="font-display text-xl font-semibold text-tinta">
                     Excluir {renda?.descricao}?
@@ -44,8 +54,17 @@ export default function ConfirmarExclusaoRenda({
                     Esta ação não pode ser desfeita.
                 </p>
 
+                {erro && (
+                    <div
+                        role="alert"
+                        className="mt-4 rounded-lg border border-vinho/30 bg-vinho/5 p-3 text-sm font-medium text-vinho"
+                    >
+                        {erro}
+                    </div>
+                )}
+
                 <div className="mt-8 flex justify-end gap-3">
-                    <SecondaryButton onClick={aoFechar} disabled={excluindo}>
+                    <SecondaryButton onClick={fechar} disabled={excluindo}>
                         Cancelar
                     </SecondaryButton>
 

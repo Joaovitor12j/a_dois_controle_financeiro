@@ -12,7 +12,7 @@ import type {
     OcorrenciaDespesa,
 } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import ConfirmarDesfazerPagamento from './Partials/ConfirmarDesfazerPagamento';
 import ConfirmarExclusaoDespesa from './Partials/ConfirmarExclusaoDespesa';
 import FormularioDespesa from './Partials/FormularioDespesa';
@@ -81,6 +81,8 @@ export default function Index({
     const [desfazerPagamento, setDesfazerPagamento] =
         useState<AlvoDeOcorrencia>(ocorrenciaFechada);
     const [aberturas, setAberturas] = useState(0);
+    const [buscaLocal, setBuscaLocal] = useState(filtros.busca ?? '');
+    const buscaTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const abrirFormulario = (despesa: Despesa | null) => {
         setAberturas((quantas) => quantas + 1);
@@ -129,6 +131,7 @@ export default function Index({
 
     const limparFiltros = () => {
         const [ano, mes] = competencia.split('-');
+        setBuscaLocal('');
 
         router.get(
             route('despesas.index'),
@@ -140,6 +143,18 @@ export default function Index({
                 only: ['ocorrencias', 'filtros'],
             },
         );
+    };
+
+    const aoMudarBusca = (valor: string) => {
+        setBuscaLocal(valor);
+
+        if (buscaTimeout.current) {
+            clearTimeout(buscaTimeout.current);
+        }
+
+        buscaTimeout.current = setTimeout(() => {
+            aplicarFiltros({ busca: valor || undefined });
+        }, 400);
     };
 
     const aPagar = ocorrencias
@@ -256,6 +271,8 @@ export default function Index({
                     formasPagamento={formasPagamentoFiltro}
                     aoMudar={aplicarFiltros}
                     aoLimpar={limparFiltros}
+                    busca={buscaLocal}
+                    aoMudarBusca={aoMudarBusca}
                 />
 
                 {!temDespesas ? (

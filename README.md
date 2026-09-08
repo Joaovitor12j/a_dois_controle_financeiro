@@ -20,6 +20,7 @@ npm run dev
 ```
 
 - App: http://localhost:8083
+- Acesso local: http://192.168.0.108:8083
 - Postgres: localhost:5487
 - Vite (HMR): localhost:5183
 

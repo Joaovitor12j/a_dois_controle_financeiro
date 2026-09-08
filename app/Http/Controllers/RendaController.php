@@ -35,6 +35,7 @@ class RendaController extends Controller
 
         $ocorrencias = Renda::with([
             'categoriaRenda',
+            'conta' => fn ($query) => $query->withTrashed(),
             'conta.usuario',
             'movimentacoes.formaPagamento' => fn ($query) => $query->withTrashed(),
             'movimentacoes.formaPagamento.conta.usuario',

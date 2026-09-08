@@ -105,6 +105,7 @@ it('desconta o saldo da conta ao marcar despesa única como paga', function () {
             'competencia' => '2026-08',
             'forma_pagamento_id' => $debito->id,
             'data_pagamento' => '2026-08-05',
+            'valor' => 4000,
         ])
         ->assertRedirect(route('despesas.index'));
 

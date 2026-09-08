@@ -368,3 +368,66 @@ it('não realiza nada num período futuro e não quebra a série do saldo', func
         ->and($resumo['resumo']['statusPeriodo'])->toBe('futuro')
         ->and(collect($pontos)->pluck('tipo')->unique()->values()->all())->toBe(['realizado', 'projetado']);
 });
+
+it('despesa por categoria mostra até 4 categorias e agrupa o restante em Outras', function () {
+    $c = casalDeTeste();
+
+    $valores = [60000, 50000, 40000, 30000, 20000, 10000];
+
+    foreach ($valores as $i => $valor) {
+        $categoria = CategoriaDespesa::create(['nome' => "Categoria {$i}", 'cor' => '#123456', 'icone' => 'home']);
+
+        Despesa::withoutGlobalScope(DespesaScope::class)->create([
+            'usuario_id' => $c->joao->id,
+            'contexto' => ContextoDespesa::Individual,
+            'categoria_despesa_id' => $categoria->id,
+            'descricao' => "Despesa {$i}",
+            'valor' => Money::fromCents($valor),
+            'tipo_lancamento' => 'unica',
+            'data_vencimento' => '2026-09-20',
+        ]);
+    }
+
+    $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
+
+    /** @var array<int, array{nome: string, valor: int}> $porCategoria */
+    $porCategoria = $resumo['despesaPorCategoria'];
+
+    expect($porCategoria)->toHaveCount(5)
+        ->and(collect($porCategoria)->pluck('nome')->all())->toBe([
+            'Categoria 0',
+            'Categoria 1',
+            'Categoria 2',
+            'Categoria 3',
+            'Outras',
+        ])
+        ->and(collect($porCategoria)->last()['valor'])->toBe(30000);
+});
+
+it('despesa por categoria não cria Outras quando só sobra uma categoria além das 4', function () {
+    $c = casalDeTeste();
+
+    $valores = [50000, 40000, 30000, 20000, 10000];
+
+    foreach ($valores as $i => $valor) {
+        $categoria = CategoriaDespesa::create(['nome' => "Categoria {$i}", 'cor' => '#123456', 'icone' => 'home']);
+
+        Despesa::withoutGlobalScope(DespesaScope::class)->create([
+            'usuario_id' => $c->joao->id,
+            'contexto' => ContextoDespesa::Individual,
+            'categoria_despesa_id' => $categoria->id,
+            'descricao' => "Despesa {$i}",
+            'valor' => Money::fromCents($valor),
+            'tipo_lancamento' => 'unica',
+            'data_vencimento' => '2026-09-20',
+        ]);
+    }
+
+    $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
+
+    /** @var array<int, array{nome: string, valor: int}> $porCategoria */
+    $porCategoria = $resumo['despesaPorCategoria'];
+
+    expect($porCategoria)->toHaveCount(5)
+        ->and(collect($porCategoria)->pluck('nome')->all())->not->toContain('Outras');
+});

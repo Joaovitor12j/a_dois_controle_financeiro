@@ -88,36 +88,6 @@ export default function SeletorVisualizacao({
                             Casal
                         </button>
                     </div>
-
-                    {modo === 'casal' && usuariosCasal.length > 0 && (
-                        <div className="flex gap-1 rounded-xl bg-papel-sombra p-1">
-                            <button
-                                type="button"
-                                onClick={() => aoMudarPessoa(null)}
-                                className={`h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors ${
-                                    pessoaId === null
-                                        ? 'bg-tinta text-papel'
-                                        : 'bg-transparent text-tinta-claro hover:text-tinta'
-                                }`}
-                            >
-                                Ambos
-                            </button>
-                            {usuariosCasal.map((usuario) => (
-                                <button
-                                    key={usuario.id}
-                                    type="button"
-                                    onClick={() => aoMudarPessoa(usuario.id)}
-                                    className={`h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors ${
-                                        pessoaId === usuario.id
-                                            ? 'bg-tinta text-papel'
-                                            : 'bg-transparent text-tinta-claro hover:text-tinta'
-                                    }`}
-                                >
-                                    {usuario.nome.split(' ')[0]}
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
 
                 <div className="flex items-center gap-2">

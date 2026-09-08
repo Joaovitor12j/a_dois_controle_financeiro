@@ -185,6 +185,7 @@ export default function Pendencias({
                               id: pagando.id,
                               descricao: pagando.descricao,
                               tipo_lancamento: pagando.tipoLancamento ?? 'unica',
+                              valor: pagando.valor,
                           }
                         : null
                 }

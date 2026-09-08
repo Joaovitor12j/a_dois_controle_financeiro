@@ -9,6 +9,7 @@ use App\Models\Movimentacao;
 use App\Models\Renda;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 final class RendaService
 {
@@ -52,6 +53,12 @@ final class RendaService
 
     public function excluir(Renda $renda): void
     {
+        if ($renda->movimentacoes()->exists()) {
+            throw ValidationException::withMessages([
+                'renda' => 'Esta renda tem recebimentos registrados e não pode ser excluída.',
+            ]);
+        }
+
         $renda->delete();
     }
 

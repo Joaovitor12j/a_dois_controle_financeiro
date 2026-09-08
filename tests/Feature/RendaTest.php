@@ -390,6 +390,34 @@ it('exclui a própria renda', function () {
     expect(Renda::withoutGlobalScope(DonoScope::class)->find($renda->id))->toBeNull();
 });
 
+it('rejeita excluir renda com recebimento registrado', function () {
+    Carbon::setTestNow('2026-08-15');
+
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioRenda($eu);
+    $categoria = categoriaRendaDeTeste();
+    $forma = formaPagamentoRenda($conta);
+    $renda = rendaValida((object) ['usuario' => $eu, 'conta' => $conta, 'categoria' => $categoria], [
+        'data_recebimento' => '2026-08-05',
+    ]);
+
+    Movimentacao::create([
+        'forma_pagamento_id' => $forma->id,
+        'valor' => $renda->valor,
+        'data' => '2026-08-05',
+        'renda_id' => $renda->id,
+        'competencia' => '2026-08-01',
+    ]);
+
+    $this->actingAs($eu)
+        ->delete(route('rendas.destroy', $renda))
+        ->assertSessionHasErrors('renda');
+
+    expect(Renda::withoutGlobalScope(DonoScope::class)->find($renda->id))->not->toBeNull();
+
+    Carbon::setTestNow();
+});
+
 it('preserva ano e mes da competência navegada ao redirecionar após excluir', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioRenda($eu);

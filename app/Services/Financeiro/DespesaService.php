@@ -4,6 +4,7 @@ namespace App\Services\Financeiro;
 
 use App\Domain\Financeiro\CalculadoraCompetenciaDespesa;
 use App\Domain\ValueObjects\Competencia;
+use App\Domain\ValueObjects\Money;
 use App\Enums\ContextoDespesa;
 use App\Enums\FiltroStatusPagamento;
 use App\Models\Despesa;
@@ -29,7 +30,7 @@ final class DespesaService
     }
 
     /**
-     * @param  array{categoria_despesa_id?: string, tipo?: string, forma_pagamento_id?: string, status?: string}  $filtros
+     * @param  array{categoria_despesa_id?: string, tipo?: string, forma_pagamento_id?: string, status?: string, busca?: string}  $filtros
      * @return Collection<int, Despesa>
      */
     public function listarNoPeriodo(Competencia $competencia, ContextoDespesa $contexto, array $filtros = []): Collection
@@ -46,6 +47,10 @@ final class DespesaService
             ->where('contexto', $contexto->value)
             ->when(isset($filtros['categoria_despesa_id']), fn ($query) => $query->where('categoria_despesa_id', $filtros['categoria_despesa_id']))
             ->when(isset($filtros['tipo']), fn ($query) => $query->where('tipo_lancamento', $filtros['tipo']))
+            ->when(! empty($filtros['busca']), fn ($query) => $query->whereRaw(
+                'unaccent(descricao) ilike unaccent(?)',
+                ['%'.$filtros['busca'].'%'],
+            ))
             ->get()
             ->filter(fn (Despesa $despesa) => $this->calculadora->existeNaCompetencia($despesa, $competencia))
             ->filter(fn (Despesa $despesa) => $this->passaFiltroFormaPagamento($despesa, $competencia, $filtros['forma_pagamento_id'] ?? null))
@@ -115,7 +120,7 @@ final class DespesaService
         ]);
 
         if ($paga) {
-            $this->marcarComoPaga($despesa, Competencia::deData(Carbon::parse($despesa->data_vencimento)), $formaPagamentoId, $dataPagamento);
+            $this->marcarComoPaga($despesa, Competencia::deData(Carbon::parse($despesa->data_vencimento)), $formaPagamentoId, $dataPagamento, $despesa->valor->cents);
         }
 
         return $despesa;
@@ -144,12 +149,13 @@ final class DespesaService
         Competencia $competencia,
         ?string $formaPagamentoId,
         string $dataPagamento,
+        int $valor,
     ): Movimentacao {
         $formaPagamentoId = $despesa->ehParcelada() ? $despesa->forma_pagamento_id : $formaPagamentoId;
 
         return Movimentacao::create([
             'forma_pagamento_id' => $formaPagamentoId,
-            'valor' => $despesa->valor->negated(),
+            'valor' => Money::fromCents($valor)->negated(),
             'data' => $dataPagamento,
             'despesa_id' => $despesa->id,
             'competencia' => $competencia->paraData(),

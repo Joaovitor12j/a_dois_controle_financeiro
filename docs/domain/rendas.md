@@ -94,6 +94,12 @@ o dia previsto de recebimento ainda não chegou, ou quando a competência
 exibida é futura. Isso é derivado a cada exibição, não é um atributo
 persistido da renda nem da movimentação.
 
+## Exclusão
+
+Excluir uma renda que já tem alguma movimentação de recebimento vinculada é
+bloqueado — o recebimento é histórico e não pode ficar órfão. Renda sem
+nenhum recebimento registrado pode ser excluída livremente.
+
 ## Questões em aberto
 
 Nenhuma no momento.

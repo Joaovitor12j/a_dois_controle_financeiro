@@ -23,7 +23,7 @@ final class DashboardService
 {
     private const PISO_SIGNIFICANCIA_CENTS = 5000;
 
-    private const PISO_RELEVANCIA_OUTRAS = 0.05;
+    private const MAX_CATEGORIAS_VISIVEIS = 4;
 
     private const COR_OUTRAS = '#3A4B5F';
 
@@ -187,7 +187,10 @@ final class DashboardService
         ])
             ->when(isset($filtros['categoria_despesa_id']), fn ($query) => $query->where('categoria_despesa_id', $filtros['categoria_despesa_id']))
             ->when(isset($filtros['tipo']), fn ($query) => $query->where('tipo_lancamento', $filtros['tipo']))
-            ->when(! empty($filtros['busca']), fn ($query) => $query->where('descricao', 'ilike', '%'.$filtros['busca'].'%'))
+            ->when(! empty($filtros['busca']), fn ($query) => $query->whereRaw(
+                'unaccent(descricao) ilike unaccent(?)',
+                ['%'.$filtros['busca'].'%'],
+            ))
             ->get()
             ->filter(fn (Despesa $despesa) => $this->calculadoraDespesa->existeNaCompetencia($despesa, $competencia));
 
@@ -426,7 +429,7 @@ final class DashboardService
             ->values()
             ->all();
 
-        return $this->comAgrupamentoOutras($itens, array_sum(array_column($itens, 'valor')));
+        return $this->comAgrupamentoOutras($itens);
     }
 
     /** @param Collection<int, Renda> $rendas
@@ -446,42 +449,37 @@ final class DashboardService
             ->values()
             ->all();
 
-        return $this->comAgrupamentoOutras($itens, array_sum(array_column($itens, 'valor')));
+        return $this->comAgrupamentoOutras($itens);
     }
 
     /**
      * @param  list<array<string, mixed>>  $itens
      * @return list<array<string, mixed>>
      */
-    private function comAgrupamentoOutras(array $itens, int $total): array
+    private function comAgrupamentoOutras(array $itens): array
     {
-        if ($total === 0) {
+        $restante = array_slice($itens, self::MAX_CATEGORIAS_VISIVEIS);
+
+        if (count($restante) < 2) {
             return $itens;
         }
 
-        $piso = $total * self::PISO_RELEVANCIA_OUTRAS;
-        $abaixoDoPiso = array_values(array_filter($itens, fn (array $item) => $item['valor'] < $piso));
-
-        if (count($abaixoDoPiso) < 2) {
-            return $itens;
-        }
-
-        $acimaDoPiso = array_values(array_filter($itens, fn (array $item) => $item['valor'] >= $piso));
+        $visiveis = array_slice($itens, 0, self::MAX_CATEGORIAS_VISIVEIS);
 
         $outras = [
             'id' => null,
             'nome' => 'Outras',
             'cor' => self::COR_OUTRAS,
             'icone' => 'more-horizontal',
-            'valor' => array_sum(array_column($abaixoDoPiso, 'valor')),
+            'valor' => array_sum(array_column($restante, 'valor')),
         ];
 
         if (array_key_exists('valorPago', $itens[0] ?? [])) {
-            $outras['valorPago'] = array_sum(array_column($abaixoDoPiso, 'valorPago'));
-            $outras['valorPendente'] = array_sum(array_column($abaixoDoPiso, 'valorPendente'));
+            $outras['valorPago'] = array_sum(array_column($restante, 'valorPago'));
+            $outras['valorPendente'] = array_sum(array_column($restante, 'valorPendente'));
         }
 
-        return [...$acimaDoPiso, $outras];
+        return [...$visiveis, $outras];
     }
 
     /** @param Collection<int, Despesa> $despesas

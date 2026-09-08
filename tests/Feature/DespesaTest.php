@@ -862,6 +862,7 @@ it('marca despesa única como paga na sua competência', function () {
             'competencia' => '2026-08',
             'forma_pagamento_id' => $forma->id,
             'data_pagamento' => '2026-08-05',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertRedirect(route('despesas.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Despesa marcada como paga.']);
@@ -875,6 +876,52 @@ it('marca despesa única como paga na sua competência', function () {
         ->and($movimentacao->getRawOriginal('data'))->toBe('2026-08-05');
 });
 
+it('aceita valor pago diferente do valor da despesa', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+    $despesa = criarDespesaUnica($eu, $categoria, [
+        'valor' => Money::fromCents(500000),
+        'data_vencimento' => '2026-08-10',
+    ]);
+
+    $this->actingAs($eu)
+        ->patch(route('despesas.marcar-como-paga', $despesa), [
+            'competencia' => '2026-08',
+            'forma_pagamento_id' => $forma->id,
+            'data_pagamento' => '2026-08-05',
+            'valor' => 480000,
+        ])
+        ->assertRedirect(route('despesas.index'));
+
+    expect(Movimentacao::sole()->valor)->toEqual(Money::fromCents(480000)->negated())
+        ->and($despesa->fresh()?->valor)->toEqual(Money::fromCents(500000));
+});
+
+it('rejeita marcar como paga sem valor ou com valor zero/negativo', function (mixed $valor) {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $forma = formaPagamentoDespesa($conta);
+    $despesa = criarDespesaUnica($eu, $categoria, ['data_vencimento' => '2026-08-10']);
+
+    $this->actingAs($eu)
+        ->patch(route('despesas.marcar-como-paga', $despesa), array_filter([
+            'competencia' => '2026-08',
+            'forma_pagamento_id' => $forma->id,
+            'data_pagamento' => '2026-08-05',
+            'valor' => $valor,
+        ], fn ($v) => $v !== null))
+        ->assertSessionHasErrors('valor');
+
+    expect(Movimentacao::count())->toBe(0);
+})->with([
+    'ausente' => [null],
+    'zero' => [0],
+    'negativo' => [-100],
+]);
+
 it('marca despesa mensal como paga numa competência do período', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
@@ -887,6 +934,7 @@ it('marca despesa mensal como paga numa competência do período', function () {
             'competencia' => '2026-03',
             'forma_pagamento_id' => $forma->id,
             'data_pagamento' => '2026-03-10',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertRedirect(route('despesas.index'));
 
@@ -906,6 +954,7 @@ it('marca despesa parcelada como paga sem pedir forma_pagamento_id, usando a do 
             'competencia' => '2026-09',
             'forma_pagamento_id' => '',
             'data_pagamento' => '2026-09-15',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertRedirect(route('despesas.index'));
 
@@ -928,6 +977,7 @@ it('rejeita enviar forma_pagamento_id ao marcar despesa parcelada como paga', fu
             'competencia' => '2026-09',
             'forma_pagamento_id' => $cartao->id,
             'data_pagamento' => '2026-09-15',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertSessionHasErrors('forma_pagamento_id');
 
@@ -946,6 +996,7 @@ it('rejeita marcar como paga competência sem ocorrência da despesa', function 
             'competencia' => '2026-09',
             'forma_pagamento_id' => $forma->id,
             'data_pagamento' => '2026-09-05',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertSessionHasErrors('competencia');
 
@@ -966,6 +1017,7 @@ it('rejeita marcar como paga uma competência já paga', function () {
             'competencia' => '2026-03',
             'forma_pagamento_id' => $forma->id,
             'data_pagamento' => '2026-03-10',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertSessionHasErrors('competencia');
 
@@ -985,6 +1037,7 @@ it('rejeita marcar como paga com forma_pagamento_id de conta do parceiro', funct
             'competencia' => '2026-08',
             'forma_pagamento_id' => $formaDoParceiro->id,
             'data_pagamento' => '2026-08-05',
+            'valor' => $despesa->valor->cents,
         ])
         ->assertSessionHasErrors('forma_pagamento_id');
 
@@ -1188,6 +1241,27 @@ it('filtra despesa por contexto: individual só traz despesa individual do usuá
             ->where('contexto', 'conjunta')
             ->has('ocorrencias', 1)
             ->where('ocorrencias.0.despesa.descricao', 'Conjunta')
+        );
+
+    Carbon::setTestNow();
+});
+
+it('filtra despesa por busca de descrição ignorando acentuação e caixa', function () {
+    Carbon::setTestNow('2026-08-15');
+
+    $eu = Usuario::factory()->create();
+    Auth::login($eu);
+
+    $categoria = categoriaDespesaDeTeste();
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Café da manhã', 'contexto' => 'conjunta', 'data_vencimento' => '2026-08-10']);
+    criarDespesaUnica($eu, $categoria, ['descricao' => 'Mercado', 'contexto' => 'conjunta', 'data_vencimento' => '2026-08-10']);
+
+    $this->actingAs($eu)
+        ->get(route('despesas.index', ['busca' => 'cafe']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $pagina) => $pagina
+            ->has('ocorrencias', 1)
+            ->where('ocorrencias.0.despesa.descricao', 'Café da manhã')
         );
 
     Carbon::setTestNow();

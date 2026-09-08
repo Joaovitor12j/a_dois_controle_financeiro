@@ -129,6 +129,7 @@ class DespesaController extends Controller
             Competencia::deString($request->validated('competencia')),
             $request->validated('forma_pagamento_id'),
             $request->validated('data_pagamento'),
+            $request->validated('valor'),
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Despesa marcada como paga.']);

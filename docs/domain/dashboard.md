@@ -106,12 +106,13 @@ filtrado do resumo — não é um cálculo novo, é outro agrupamento do mesmo t
 
 ## Categorias
 
-"Despesa por categoria" e "Renda por categoria" agrupam pelo total de cada categoria no período.
-Categoria que representa menos de **5% do total do card** entra numa linha agregada "Outras", em
-vez de poluir a lista com percentuais irrelevantes — só quando há pelo menos duas categorias abaixo
-desse piso (uma só, sozinha, não é agrupada). "Despesa por categoria" também mostra, por categoria,
-quanto já está pago e quanto ainda está pendente, na competência do período — mesmo critério de
-pagamento usado no resto da tela (existência de movimentação na competência).
+"Despesa por categoria" e "Renda por categoria" agrupam pelo total de cada categoria no período,
+ordenadas da maior para a menor. Mostram até **4 categorias** individualmente; a partir da 5ª, o
+restante entra numa linha agregada "Outras", em vez de poluir a lista com muitas linhas pequenas —
+só quando sobram pelo menos duas categorias além das 4 (uma só, sozinha, não é agrupada; nesse caso
+a lista mostra 5 categorias e não gera "Outras"). "Despesa por categoria" também mostra, por
+categoria, quanto já está pago e quanto ainda está pendente, na competência do período — mesmo
+critério de pagamento usado no resto da tela (existência de movimentação na competência).
 
 ## Despesa por forma de pagamento
 
@@ -144,15 +145,14 @@ abaixo, porque ele já É a quebra por pessoa.
 
 ## Filtros
 
-O dashboard aceita os mesmos quatro filtros de despesa definidos em
-[despesas.md](despesas.md#filtros): categoria, tipo de lançamento, forma de
-pagamento e status de pagamento, mais dois filtros exclusivos desta tela:
+O dashboard aceita os mesmos cinco filtros de despesa definidos em
+[despesas.md](despesas.md#filtros): busca por descrição, categoria, tipo de
+lançamento, forma de pagamento e status de pagamento, mais um filtro
+exclusivo desta tela:
 
-- **Busca por descrição da despesa**: substring, sem diferenciar maiúsculas/minúsculas. Existe só
-  no dashboard — a tela de Despesas não ganha esse filtro nesta tarefa.
 - **Pessoa** (só aparece em modo Casal): `ambos` (padrão) ou um dos dois usuários fixos.
 
-Escopo dos quatro filtros de despesa + busca — afetam, dentro do período e do modo já
+Escopo dos cinco filtros de despesa — afetam, dentro do período e do modo já
 selecionados: resumo (lado despesa: Despesa, Previsto e, por consequência, Realizado), Despesa por
 categoria, Despesa por forma de pagamento, Individual x Conjunta e a parte de despesa das
 Pendências. **Não afetam**: Renda por categoria, Contribuição por pessoa e Tendência de 6 meses —

@@ -38,6 +38,7 @@ class MarcarComoPagaDespesaRequest extends FormRequest
                 'uuid', Rule::exists('formas_pagamento', 'id')->whereNull('deleted_at'),
             ],
             'data_pagamento' => ['required', 'date'],
+            'valor' => ['required', 'integer', 'min:1'],
         ];
     }
 
