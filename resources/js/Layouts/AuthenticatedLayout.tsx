@@ -61,6 +61,13 @@ export default function Authenticated({
                                 </NavLink>
 
                                 <NavLink
+                                    href={route('faturas.index')}
+                                    active={route().current('faturas.*')}
+                                >
+                                    Faturas
+                                </NavLink>
+
+                                <NavLink
                                     href={route('categorias.index')}
                                     active={route().current('categorias.*')}
                                 >
@@ -172,6 +179,13 @@ export default function Authenticated({
                             active={route().current('despesas.*')}
                         >
                             Despesas
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            href={route('faturas.index')}
+                            active={route().current('faturas.*')}
+                        >
+                            Faturas
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink

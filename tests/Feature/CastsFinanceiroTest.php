@@ -105,6 +105,8 @@ it('encadeia as relations do módulo financeiro', function () {
     $fatura = Fatura::create([
         'cartao_credito_id' => $cartao->forma_pagamento_id,
         'competencia' => '2026-09-01',
+        'data_vencimento' => '2026-09-12',
+        'valor' => Money::fromCents(25000),
     ]);
 
     $forma = FormaPagamento::create([
@@ -116,7 +118,7 @@ it('encadeia as relations do módulo financeiro', function () {
     $movimentacao = Movimentacao::create([
         'forma_pagamento_id' => $forma->id,
         'fatura_id' => $fatura->id,
-        'valor' => Money::fromCents(25000),
+        'valor' => Money::fromCents(-25000),
         'data' => '2026-09-12',
     ]);
 
@@ -128,6 +130,7 @@ it('encadeia as relations do módulo financeiro', function () {
     expect($formaCredito->cartaoCredito->is($cartao))->toBeTrue();
     expect($cartao->faturas->pluck('id')->all())->toBe([$fatura->id]);
     expect($forma->movimentacoes->pluck('id')->all())->toBe([$movimentacao->id]);
+    expect($fatura->estaPaga())->toBeTrue();
 });
 
 it('grava competência de fatura como primeiro dia do mês e a devolve como Competencia', function () {
@@ -147,8 +150,11 @@ it('grava competência de fatura como primeiro dia do mês e a devolve como Comp
     $fatura = Fatura::create([
         'cartao_credito_id' => $cartao->forma_pagamento_id,
         'competencia' => '2026-09',
+        'data_vencimento' => '2026-09-12',
+        'valor' => Money::fromCents(10000),
     ]);
 
     expect(DB::table('faturas')->where('id', $fatura->id)->value('competencia'))->toBe('2026-09-01');
     expect($fatura->fresh()?->competencia)->toEqual(Competencia::deAnoMes(2026, 9));
+    expect($fatura->fresh()?->estaPaga())->toBeFalse();
 });

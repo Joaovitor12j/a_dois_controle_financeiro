@@ -48,6 +48,12 @@ class MarcarComoPagaDespesaRequest extends FormRequest
             /** @var Despesa $despesa */
             $despesa = $this->route('despesa');
 
+            if ($despesa->ehParcelada()) {
+                $validator->errors()->add('despesa', 'Parcela não tem pagamento próprio — é paga através da fatura que a cobre.');
+
+                return;
+            }
+
             if (! $validator->errors()->has('competencia')) {
                 $this->validarCompetencia($validator, $despesa);
             }

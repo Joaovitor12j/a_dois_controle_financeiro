@@ -3,10 +3,12 @@
 use App\Domain\ValueObjects\Competencia;
 use App\Domain\ValueObjects\Money;
 use App\Enums\ContextoDespesa;
+use App\Models\CartaoCredito;
 use App\Models\CategoriaDespesa;
 use App\Models\CategoriaRenda;
 use App\Models\Conta;
 use App\Models\Despesa;
+use App\Models\Fatura;
 use App\Models\FormaPagamento;
 use App\Models\Movimentacao;
 use App\Models\Renda;
@@ -255,6 +257,73 @@ it('só conta renda como realizada na série do saldo quando existe movimentaç�
 
     expect($resumo['resumo']['saldo'])->toBe(500000)
         ->and($resumo['resumo']['receita'])->toBe(550000);
+});
+
+it('despesa paga com forma de pagamento tipo crédito não entra na evolução de saldo realizado', function () {
+    $c = casalDeTeste();
+
+    $cartao = FormaPagamento::create(['conta_id' => $c->contaJoao->id, 'nome' => 'Cartão', 'tipo' => 'credito']);
+    CartaoCredito::create([
+        'forma_pagamento_id' => $cartao->id,
+        'limite_total' => Money::fromCents(500000),
+        'dia_fechamento' => 10,
+        'dia_vencimento' => 20,
+    ]);
+
+    $despesa = Despesa::withoutGlobalScope(DespesaScope::class)->create([
+        'usuario_id' => $c->joao->id,
+        'contexto' => ContextoDespesa::Individual,
+        'categoria_despesa_id' => $c->categoriaDespesa->id,
+        'descricao' => 'Compra no crédito',
+        'valor' => Money::fromCents(30000),
+        'tipo_lancamento' => 'unica',
+        'data_vencimento' => '2026-09-05',
+    ]);
+
+    Movimentacao::create([
+        'forma_pagamento_id' => $cartao->id,
+        'valor' => Money::fromCents(-30000),
+        'data' => '2026-09-05',
+        'despesa_id' => $despesa->id,
+        'competencia' => '2026-09-01',
+    ]);
+
+    $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
+
+    expect($resumo['resumo']['saldo'])->toBe(0)
+        ->and($resumo['resumo']['despesa'])->toBe(30000);
+});
+
+it('fatura paga entra na evolução de saldo mas nunca conta no total de despesa nem em despesa por categoria', function () {
+    $c = casalDeTeste();
+
+    $cartao = FormaPagamento::create(['conta_id' => $c->contaJoao->id, 'nome' => 'Cartão', 'tipo' => 'credito']);
+    CartaoCredito::create([
+        'forma_pagamento_id' => $cartao->id,
+        'limite_total' => Money::fromCents(500000),
+        'dia_fechamento' => 10,
+        'dia_vencimento' => 20,
+    ]);
+
+    $fatura = Fatura::create([
+        'cartao_credito_id' => $cartao->id,
+        'competencia' => '2026-09-01',
+        'data_vencimento' => '2026-09-20',
+        'valor' => Money::fromCents(45000),
+    ]);
+
+    Movimentacao::create([
+        'forma_pagamento_id' => $c->formaJoao->id,
+        'fatura_id' => $fatura->id,
+        'valor' => Money::fromCents(-45000),
+        'data' => '2026-09-18',
+    ]);
+
+    $resumo = app(DashboardService::class)->obterResumo('individual', Competencia::deString('2026-09'));
+
+    expect($resumo['resumo']['saldo'])->toBe(-45000)
+        ->and($resumo['resumo']['despesa'])->toBe(0)
+        ->and($resumo['despesaPorCategoria'])->toBe([]);
 });
 
 it('resolve contribuição por pessoa mesmo quando a forma de pagamento usada no pagamento foi excluída depois', function () {

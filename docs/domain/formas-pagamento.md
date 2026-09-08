@@ -76,7 +76,8 @@ ele é um campo próprio do crédito e não gera movimentação.
 ### Ciclo de fatura
 
 Uma forma de pagamento do tipo crédito tem um dia de fechamento e um dia de
-vencimento, ambos obrigatórios e entre 1 e 31.
+vencimento, ambos obrigatórios e entre 1 e 31. Esses dois campos definem o
+ciclo de geração da fatura do cartão — ver [fatura.md](fatura.md#geração).
 
 ## Vale e benefício
 
@@ -111,8 +112,6 @@ visibilidade segue inteiramente a da forma de pagamento a que pertencem.
 - **Cascata para movimentações.** Excluir uma forma de pagamento hoje não
   arrasta logicamente as movimentações associadas a ela. Falta decidir se
   deveria haver essa cascata, análoga à de conta → forma de pagamento.
-- **Fatura.** O relacionamento entre crédito e fatura ainda não foi
-  redesenhado — este documento cobre apenas a forma de pagamento em si.
 - **Consistência do dia de vencimento com o de fechamento (crédito).** Hoje
   nada impede que o dia de vencimento seja anterior ao dia de fechamento.
   Falta decidir se essa combinação deve ser validada.

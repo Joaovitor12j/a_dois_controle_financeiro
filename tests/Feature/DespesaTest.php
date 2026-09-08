@@ -941,7 +941,7 @@ it('marca despesa mensal como paga numa competência do período', function () {
     expect(Movimentacao::sole()->despesa_id)->toBe($despesa->id);
 });
 
-it('marca despesa parcelada como paga sem pedir forma_pagamento_id, usando a do cartão da compra', function () {
+it('rejeita marcar despesa parcelada como paga individualmente — parcela é paga através da fatura', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
@@ -956,15 +956,12 @@ it('marca despesa parcelada como paga sem pedir forma_pagamento_id, usando a do 
             'data_pagamento' => '2026-09-15',
             'valor' => $despesa->valor->cents,
         ])
-        ->assertRedirect(route('despesas.index'));
+        ->assertSessionHasErrors('despesa');
 
-    $movimentacao = Movimentacao::sole();
-
-    expect($movimentacao->forma_pagamento_id)->toBe($cartao->id)
-        ->and((string) $movimentacao->competencia)->toBe('2026-09');
+    expect(Movimentacao::count())->toBe(0);
 });
 
-it('rejeita enviar forma_pagamento_id ao marcar despesa parcelada como paga', function () {
+it('rejeita desfazer pagamento de despesa parcelada individualmente', function () {
     $eu = Usuario::factory()->create();
     $conta = contaDoUsuarioDespesa($eu);
     $categoria = categoriaDespesaDeTeste();
@@ -973,15 +970,8 @@ it('rejeita enviar forma_pagamento_id ao marcar despesa parcelada como paga', fu
     $despesa = criarDespesaParcelada($eu, $categoria, $cartao, ['data_primeira_parcela' => '2026-09-01']);
 
     $this->actingAs($eu)
-        ->patch(route('despesas.marcar-como-paga', $despesa), [
-            'competencia' => '2026-09',
-            'forma_pagamento_id' => $cartao->id,
-            'data_pagamento' => '2026-09-15',
-            'valor' => $despesa->valor->cents,
-        ])
-        ->assertSessionHasErrors('forma_pagamento_id');
-
-    expect(Movimentacao::count())->toBe(0);
+        ->patch(route('despesas.desfazer-pagamento', $despesa), ['competencia' => '2026-09'])
+        ->assertSessionHasErrors('despesa');
 });
 
 it('rejeita marcar como paga competência sem ocorrência da despesa', function () {

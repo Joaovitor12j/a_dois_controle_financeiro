@@ -31,14 +31,16 @@ Para despesa parcelada, o valor representa a parcela, não o total — o total
 
 ## Categoria
 
-Toda despesa pertence a uma categoria de despesa, obrigatória. Regras da
-categoria em si (propriedade, identificação, aparência, exclusão) estão em
-[categorias.md](categorias.md).
+Toda despesa pertence a uma categoria de despesa, obrigatória — exceto
+fatura, que não tem categoria (ver [fatura.md](fatura.md#campos)): ela não
+é um gasto próprio, é o agregado de gastos que já têm categoria
+individualmente. Regras da categoria em si (propriedade, identificação,
+aparência, exclusão) estão em [categorias.md](categorias.md).
 
 ## Natureza do lançamento
 
-Uma despesa tem um tipo de lançamento: **única**, **mensal** ou
-**parcelada**.
+Uma despesa tem um tipo de lançamento: **única**, **mensal**, **parcelada**
+ou **fatura**.
 
 Despesa **única** tem uma data de vencimento, obrigatória, e não tem dia de
 vencimento, data de início, data de fim, número de parcelas nem data da
@@ -59,6 +61,10 @@ campos são proibidos para esse tipo. A forma de pagamento de uma despesa
 parcelada deve ser do tipo crédito — essa regra cruza com forma de pagamento
 e não é garantida no banco, é validação de aplicação.
 
+Despesa do tipo **fatura** não nasce do formulário livre de despesa — é
+gerada, a partir de um cartão de crédito e uma competência, e gerenciada em
+tela própria. Regra completa em [fatura.md](fatura.md).
+
 ## Pagamento
 
 Pagamento não é um atributo da despesa. É representado por uma
@@ -77,6 +83,8 @@ Cada tipo de lançamento mapeia numa ou várias competências possíveis:
   definida).
 - Despesa **parcelada** tem uma competência por parcela, a partir de
   `data_primeira_parcela`.
+- Despesa **fatura** tem uma única competência possível, derivada da própria
+  `data_vencimento` — mesmo princípio de única. Ver [fatura.md](fatura.md).
 
 Uma despesa está paga numa competência quando existe uma movimentação com
 esse `despesa_id` e essa `competencia` — nunca mais que uma por combinação
@@ -142,9 +150,7 @@ esperado, não é erro.
 
 ## Questões em aberto
 
-- **Relação entre parcelamento e fatura.** Uma despesa parcelada paga em
-  cartão de crédito presumivelmente se relaciona com fatura, mas fatura
-  ainda não foi redesenhada neste ciclo.
+Nenhuma no momento além das registradas em [fatura.md](fatura.md).
 
 ---
 
@@ -160,4 +166,6 @@ Implementado em:
 `app/Models/Despesa.php`, `app/Models/Movimentacao.php`,
 `app/Services/Financeiro/DespesaService.php`,
 `app/Policies/DespesaPolicy.php`, `app/Http/Controllers/DespesaController.php`,
-`app/Http/Requests/FiltrosDespesaRequest.php`, `app/Enums/FiltroStatusPagamento.php`.
+`app/Http/Requests/FiltrosDespesaRequest.php`, `app/Enums/FiltroStatusPagamento.php`,
+`database/migrations/2026_09_08_000002_add_fatura_to_tipo_lancamento_despesa_enum.php`,
+`database/migrations/2026_09_08_000003_add_fatura_ao_despesas_campos_por_tipo_check.php`.

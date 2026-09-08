@@ -26,12 +26,19 @@ class DesfazerPagamentoDespesaRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            /** @var Despesa $despesa */
+            $despesa = $this->route('despesa');
+
+            if ($despesa->ehParcelada()) {
+                $validator->errors()->add('despesa', 'Parcela não tem pagamento próprio — desfaça o pagamento da fatura que a cobre.');
+
+                return;
+            }
+
             if ($validator->errors()->has('competencia')) {
                 return;
             }
 
-            /** @var Despesa $despesa */
-            $despesa = $this->route('despesa');
             $competencia = Competencia::deString($this->input('competencia'));
 
             if (! $despesa->movimentacoes()->where('competencia', $competencia->paraData())->exists()) {

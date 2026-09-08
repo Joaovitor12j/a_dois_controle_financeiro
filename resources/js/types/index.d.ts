@@ -118,6 +118,29 @@ export interface Despesa {
     categoria_despesa?: CategoriaDespesa;
 }
 
+export interface Fatura {
+    id: string;
+    cartao_credito_id: string;
+    competencia: string;
+    data_vencimento: string;
+    valor: number;
+}
+
+export interface ItemFatura {
+    despesa: Despesa;
+    numeroParcela: number | null;
+    valor: number;
+    paga: boolean;
+}
+
+export interface FaturaResumo {
+    fatura: Fatura;
+    cartao: FormaPagamento;
+    conta: ContaResumo;
+    paga: boolean;
+    itens: ItemFatura[];
+}
+
 export type StatusDespesa = 'vencida' | 'pendente' | 'paga';
 export type StatusPagamentoFiltro = 'paga' | 'pendente';
 
@@ -209,7 +232,7 @@ export type NivelPendencia = 'vencida' | 'vence_em_breve' | 'no_prazo';
 
 export interface PendenciaItem {
     id: string;
-    tipo: 'despesa' | 'renda';
+    tipo: 'despesa' | 'renda' | 'fatura';
     descricao: string;
     contexto: ContextoDespesa | null;
     tipoLancamento: TipoLancamentoDespesa | null;

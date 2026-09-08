@@ -51,6 +51,7 @@ conjunta não deve ser tratada como individual.
 | Categorias | [categorias.md](categorias.md) |
 | Rendas | [rendas.md](rendas.md) |
 | Despesas | [despesas.md](despesas.md) |
+| Fatura | [fatura.md](fatura.md) |
 | Movimentações | [movimentacoes.md](movimentacoes.md) |
 | Dashboard | [dashboard.md](dashboard.md) |
 

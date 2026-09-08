@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoriaRendaController;
 use App\Http\Controllers\ContaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DespesaController;
+use App\Http\Controllers\FaturaController;
 use App\Http\Controllers\FormaPagamentoController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\ProfileController;
@@ -49,6 +50,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('despesas/{despesa}/desfazer-pagamento', [DespesaController::class, 'desfazerPagamento'])
         ->name('despesas.desfazer-pagamento');
     Route::resource('despesas', DespesaController::class)->except(['create', 'edit', 'show']);
+
+    Route::patch('faturas/{fatura}/marcar-como-paga', [FaturaController::class, 'marcarComoPaga'])
+        ->name('faturas.marcar-como-paga');
+    Route::patch('faturas/{fatura}/desfazer-pagamento', [FaturaController::class, 'desfazerPagamento'])
+        ->name('faturas.desfazer-pagamento');
+    Route::resource('faturas', FaturaController::class)->only(['index', 'store']);
 });
 
 require __DIR__.'/auth.php';

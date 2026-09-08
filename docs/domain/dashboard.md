@@ -49,15 +49,29 @@ Ponto de corte entre Realizado e Previsto:
 
 Um evento entra na linha **realizada** só quando é certo: renda, só quando já está recebida (existe
 movimentação de recebimento na competência), pelo dia do recebimento; despesa, só quando já está
-paga (existe movimentação na competência), pelo dia do pagamento. Uma renda ou despesa **pendente é
-sempre projeção**, nunca realizado, mesmo que seu dia agendado já tenha passado — renda projetada
-entra pelo dia agendado de recebimento, despesa projetada entra pelo dia de vencimento.
+paga (existe movimentação na competência) **com uma forma de pagamento que não é crédito**, pelo
+dia do pagamento. Uma renda ou despesa **pendente é sempre projeção**, nunca realizado, mesmo que
+seu dia agendado já tenha passado — renda projetada entra pelo dia agendado de recebimento, despesa
+projetada entra pelo dia de vencimento.
+
+**Despesa paga com forma de pagamento do tipo crédito nunca entra como evento realizado** — vale
+para qualquer tipo de despesa (única, mensal ou parcela de parcelada), porque crédito não é
+dinheiro saindo de conta nenhuma (ver [movimentacoes.md](movimentacoes.md#crédito-nunca-desconta-saldo-real)).
+Quem entra no lugar é a **fatura**, quando paga, na data do pagamento dela — a fatura é uma despesa
+como outra qualquer (ver [fatura.md](fatura.md)), e sua movimentação de pagamento usa a forma de
+pagamento real escolhida no momento, nunca o cartão.
 
 **Despesa parcelada não entra na evolução diária do saldo, nem em Pendências** — ela não tem data
-de vencimento própria (esse dado pertence à fatura, e fatura ainda não foi redesenhada). Ela
-continua entrando nos totais do período, em "Despesa por categoria" e em "Despesa por forma de
-pagamento". A tela avisa essa limitação junto da evolução diária, quando há alguma parcelada no
-período.
+de vencimento própria (esse dado pertence à fatura). Ela continua entrando nos totais do período,
+em "Despesa por categoria" e em "Despesa por forma de pagamento". A tela avisa essa limitação junto
+da evolução diária, quando há alguma parcelada no período.
+
+**Fatura nunca entra no total de despesas do período, em "Despesa por categoria" nem em "Despesa
+por forma de pagamento"** — quem conta nesses três lugares é a despesa original (a parcela, a
+única, a mensal), esteja ela coberta por uma fatura já gerada ou não; contar os dois seria duplicar
+o mesmo gasto (ver [fatura.md](fatura.md#fatura-e-os-totais-do-período)). Fatura participa
+normalmente de Pendências (com vencimento = dia de vencimento do cartão) e, quando paga, da
+evolução diária de saldo — únicos dois lugares onde ela aparece.
 
 ## Badge de variação sobre o mês anterior
 
@@ -171,11 +185,10 @@ forma de pagamento, Individual x Conjunta e Pendências, independentemente da pe
 
 ## Questões em aberto
 
-- **Cartão de crédito no dashboard.** Fora do escopo desta tela por ora — fatura ainda não foi
-  redesenhada (mesma lacuna de [despesas.md](despesas.md) e
-  [formas-pagamento.md](formas-pagamento.md)).
-- **Vencimento de despesa parcelada.** Depende da fatura ser redesenhada; até lá, parcelada não
-  aparece em Pendências nem na evolução diária do saldo.
+- **Vencimento de despesa parcelada.** A parcela em si continua sem data de vencimento própria —
+  esse dado pertence à fatura que a cobre, não à parcela. Por isso parcelada continua fora de
+  Pendências e da evolução diária do saldo, mesmo com fatura já implementada (ver
+  [fatura.md](fatura.md) e [despesas.md](despesas.md)).
 
 ---
 

@@ -3,14 +3,18 @@
 namespace App\Models;
 
 use App\Casts\CompetenciaCast;
+use App\Casts\MoneyCast;
 use App\Domain\ValueObjects\Competencia;
+use App\Domain\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property Competencia $competencia
+ * @property Money $valor
  */
 class Fatura extends Model
 {
@@ -22,6 +26,8 @@ class Fatura extends Model
     protected $fillable = [
         'cartao_credito_id',
         'competencia',
+        'data_vencimento',
+        'valor',
     ];
 
     /** @return array<string, string> */
@@ -29,6 +35,8 @@ class Fatura extends Model
     {
         return [
             'competencia' => CompetenciaCast::class,
+            'data_vencimento' => 'date',
+            'valor' => MoneyCast::class,
         ];
     }
 
@@ -42,5 +50,16 @@ class Fatura extends Model
     public function movimentacoes(): HasMany
     {
         return $this->hasMany(Movimentacao::class);
+    }
+
+    /** @return HasOne<Movimentacao, $this> */
+    public function movimentacaoDePagamento(): HasOne
+    {
+        return $this->hasOne(Movimentacao::class)->whereNull('despesa_id');
+    }
+
+    public function estaPaga(): bool
+    {
+        return $this->movimentacaoDePagamento()->exists();
     }
 }

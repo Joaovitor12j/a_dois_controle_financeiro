@@ -49,12 +49,6 @@ class Movimentacao extends Model
         return $this->belongsTo(FormaPagamento::class);
     }
 
-    /** @return BelongsTo<Fatura, $this> */
-    public function fatura(): BelongsTo
-    {
-        return $this->belongsTo(Fatura::class);
-    }
-
     /** @return BelongsTo<Despesa, $this> */
     public function despesa(): BelongsTo
     {
@@ -65,5 +59,11 @@ class Movimentacao extends Model
     public function renda(): BelongsTo
     {
         return $this->belongsTo(Renda::class);
+    }
+
+    /** @return BelongsTo<Fatura, $this> */
+    public function fatura(): BelongsTo
+    {
+        return $this->belongsTo(Fatura::class);
     }
 }

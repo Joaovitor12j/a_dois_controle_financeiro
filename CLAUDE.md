@@ -15,6 +15,7 @@ Domínios com regra definida hoje:
 | Formas de pagamento | [formas-pagamento.md](docs/domain/formas-pagamento.md) |
 | Rendas | [rendas.md](docs/domain/rendas.md) |
 | Despesas | [despesas.md](docs/domain/despesas.md) |
+| Fatura | [fatura.md](docs/domain/fatura.md) |
 | Movimentações | [movimentacoes.md](docs/domain/movimentacoes.md) |
 | Dashboard | [dashboard.md](docs/domain/dashboard.md) |
 

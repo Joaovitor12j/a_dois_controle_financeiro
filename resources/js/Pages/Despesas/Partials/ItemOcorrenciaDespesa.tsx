@@ -334,10 +334,12 @@ export default function ItemOcorrenciaDespesa({
             </div>
 
             <div className="flex items-center justify-end gap-0.5">
-                <BotaoAlternarPagamento
-                    paga={paga}
-                    aoClicar={paga ? aoDesfazerPagamento : aoMarcarComoPaga}
-                />
+                {!parcelada && (
+                    <BotaoAlternarPagamento
+                        paga={paga}
+                        aoClicar={paga ? aoDesfazerPagamento : aoMarcarComoPaga}
+                    />
+                )}
                 <BotaoEditar aoClicar={aoEditar} />
                 <BotaoExcluir aoClicar={aoExcluir} />
             </div>

@@ -13,6 +13,7 @@ use App\Models\Scopes\DonoScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 final class DespesaService
 {
@@ -151,7 +152,11 @@ final class DespesaService
         string $dataPagamento,
         int $valor,
     ): Movimentacao {
-        $formaPagamentoId = $despesa->ehParcelada() ? $despesa->forma_pagamento_id : $formaPagamentoId;
+        if ($despesa->ehParcelada()) {
+            throw ValidationException::withMessages([
+                'despesa' => 'Parcela não tem pagamento próprio — é paga através da fatura que a cobre.',
+            ]);
+        }
 
         return Movimentacao::create([
             'forma_pagamento_id' => $formaPagamentoId,
@@ -164,6 +169,12 @@ final class DespesaService
 
     public function desfazerPagamento(Despesa $despesa, Competencia $competencia): void
     {
+        if ($despesa->ehParcelada()) {
+            throw ValidationException::withMessages([
+                'despesa' => 'Parcela não tem pagamento próprio — desfaça o pagamento da fatura que a cobre.',
+            ]);
+        }
+
         $despesa->movimentacoes()->where('competencia', $competencia->paraData())->delete();
     }
 }

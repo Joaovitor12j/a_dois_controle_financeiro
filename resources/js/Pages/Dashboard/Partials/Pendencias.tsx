@@ -4,7 +4,7 @@ import type { FormaPagamento, ModoVisualizacao, PendenciaItem } from '@/types';
 import { CircleCheck } from 'lucide-react';
 import { useState } from 'react';
 
-function descreverPrazo(dias: number, tipo: 'despesa' | 'renda'): string {
+function descreverPrazo(dias: number, tipo: PendenciaItem['tipo']): string {
     if (tipo === 'renda') {
         if (dias === 0) return 'Recebe hoje';
         if (dias === 1) return 'Recebe amanhã';

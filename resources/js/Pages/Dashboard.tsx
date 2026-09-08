@@ -181,6 +181,12 @@ export default function Dashboard({
             return;
         }
 
+        if (item.tipo === 'fatura') {
+            router.get(route('faturas.index'));
+
+            return;
+        }
+
         irParaDespesas({
             status: 'pendente',
             ...(item.categoriaDespesaId ? { categoria_despesa_id: item.categoriaDespesaId } : {}),

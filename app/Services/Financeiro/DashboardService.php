@@ -10,6 +10,7 @@ use App\Enums\FiltroStatusPagamento;
 use App\Enums\TipoLancamentoDespesa;
 use App\Enums\TipoRecorrencia;
 use App\Models\Despesa;
+use App\Models\Fatura;
 use App\Models\FormaPagamento;
 use App\Models\Movimentacao;
 use App\Models\Renda;
@@ -42,12 +43,14 @@ final class DashboardService
 
         $rendas = $this->rendasNoPeriodo($modo, $usuarios, $competencia, $pessoaId);
         $despesas = $this->despesasNoPeriodo($modo, $competencia, $filtros);
+        $faturas = $this->faturasNoPeriodo($modo, $competencia);
 
-        $atual = $this->resumirPeriodo($rendas, $despesas, $competencia, $pessoaId);
+        $atual = $this->resumirPeriodo($rendas, $despesas, $faturas, $competencia, $pessoaId);
         $competenciaAnterior = $competencia->anterior();
         $anterior = $this->resumirPeriodo(
             $this->rendasNoPeriodo($modo, $usuarios, $competenciaAnterior, $pessoaId),
             $this->despesasNoPeriodo($modo, $competenciaAnterior, $filtros),
+            $this->faturasNoPeriodo($modo, $competenciaAnterior),
             $competenciaAnterior,
             $pessoaId,
         );
@@ -72,7 +75,7 @@ final class DashboardService
             'receitaPorCategoria' => $this->agruparPorCategoriaRenda($rendas),
             'despesaPorFormaPagamento' => $this->agruparPorFormaPagamento($despesas, $competencia),
             'individualXConjunta' => $modo === 'individual' ? $this->individualXConjunta($despesas) : null,
-            'pendencias' => $this->pendencias($despesas, $rendas, $competencia),
+            'pendencias' => $this->pendencias($despesas, $rendas, $faturas, $competencia),
             'primeiroUso' => $this->primeiroUso(),
             'usuariosCasal' => $this->usuariosCasalResumo(),
         ];
@@ -95,8 +98,9 @@ final class DashboardService
         $usuarios = $this->usuariosDoEscopo($modo);
         $rendas = $this->rendasNoPeriodo($modo, $usuarios, $competencia, $pessoaId);
         $despesas = $this->despesasNoPeriodo($modo, $competencia, $filtros);
+        $faturas = $this->faturasNoPeriodo($modo, $competencia);
 
-        $resumo = $this->resumirPeriodo($rendas, $despesas, $competencia, $pessoaId);
+        $resumo = $this->resumirPeriodo($rendas, $despesas, $faturas, $competencia, $pessoaId);
 
         return [
             'serie' => $resumo['serie'],
@@ -204,6 +208,30 @@ final class DashboardService
             ->values();
     }
 
+    /**
+     * Fatura é sempre individual (dono deriva do cartão) — só entra no modo individual, mesmo
+     * princípio de despesa individual não contar no modo casal.
+     *
+     * @return Collection<int, Fatura>
+     */
+    private function faturasNoPeriodo(string $modo, Competencia $competencia): Collection
+    {
+        if ($modo === 'casal') {
+            return collect();
+        }
+
+        return Fatura::query()
+            ->whereHas('cartaoCredito.formaPagamento.conta')
+            ->where('competencia', $competencia->paraData())
+            ->with(['cartaoCredito.formaPagamento', 'movimentacoes'])
+            ->get();
+    }
+
+    private function movimentacaoDaFatura(Fatura $fatura): ?Movimentacao
+    {
+        return $fatura->movimentacoes->first(fn (Movimentacao $movimentacao) => $movimentacao->despesa_id === null);
+    }
+
     private function passaFiltroFormaPagamento(Despesa $despesa, Competencia $competencia, ?string $formaPagamentoId): bool
     {
         if ($formaPagamentoId === null) {
@@ -263,9 +291,10 @@ final class DashboardService
     /**
      * @param  Collection<int, Renda>  $rendas
      * @param  Collection<int, Despesa>  $despesas
+     * @param  Collection<int, Fatura>  $faturas
      * @return array{receita: Money, despesa: Money, resultado: Money, saldo: Money, serie: list<array{dia: int, valor: int, tipo: string}>, eventosPorDia: array<int, list<array{descricao: string, valor: int}>>, statusPeriodo: string}
      */
-    private function resumirPeriodo(Collection $rendas, Collection $despesas, Competencia $competencia, ?string $pessoaId = null): array
+    private function resumirPeriodo(Collection $rendas, Collection $despesas, Collection $faturas, Competencia $competencia, ?string $pessoaId = null): array
     {
         $receita = $rendas->reduce(fn (Money $carry, Renda $renda) => $carry->plus($renda->valor), Money::zero());
         $despesaTotal = $despesas->reduce(fn (Money $carry, Despesa $despesa) => $carry->plus($despesa->valor), Money::zero());
@@ -299,6 +328,10 @@ final class DashboardService
             $valorNegativo = $despesa->valor->negated();
 
             if ($movimentacao !== null) {
+                if ($movimentacao->formaPagamento?->ehCredito()) {
+                    continue;
+                }
+
                 if ($pessoaId === null || $this->pagadorDaMovimentacao($movimentacao) === $pessoaId) {
                     $certos[] = ['dia' => min(Carbon::parse($movimentacao->data)->day, $ultimoDia), 'valor' => $valorNegativo, 'descricao' => $despesa->descricao];
                 }
@@ -311,6 +344,20 @@ final class DashboardService
                 : $despesa->dia_vencimento;
 
             $projetados[] = ['dia' => min($diaVencimento, $ultimoDia), 'valor' => $valorNegativo, 'descricao' => $despesa->descricao];
+        }
+
+        foreach ($faturas as $fatura) {
+            $descricao = 'Fatura '.$fatura->cartaoCredito->formaPagamento->nome;
+            $movimentacao = $this->movimentacaoDaFatura($fatura);
+            $valorNegativo = $fatura->valor->negated();
+
+            if ($movimentacao !== null) {
+                $certos[] = ['dia' => min(Carbon::parse($movimentacao->data)->day, $ultimoDia), 'valor' => $valorNegativo, 'descricao' => $descricao];
+
+                continue;
+            }
+
+            $projetados[] = ['dia' => min(Carbon::parse($fatura->data_vencimento)->day, $ultimoDia), 'valor' => $valorNegativo, 'descricao' => $descricao];
         }
 
         [$serieRealizada, $saldoNoCorte] = $this->serieAcumulada($certos, min(1, $corte), $corte, Money::zero());
@@ -527,9 +574,10 @@ final class DashboardService
     /**
      * @param  Collection<int, Despesa>  $despesas
      * @param  Collection<int, Renda>  $rendas
+     * @param  Collection<int, Fatura>  $faturas
      * @return list<array{id: string, tipo: string, descricao: string, contexto: string|null, tipoLancamento: string|null, categoriaDespesaId: string|null, data: string, valor: int, dias: int, nivel: string}>
      */
-    private function pendencias(Collection $despesas, Collection $rendas, Competencia $competencia): array
+    private function pendencias(Collection $despesas, Collection $rendas, Collection $faturas, Competencia $competencia): array
     {
         $hoje = Carbon::today();
 
@@ -560,7 +608,20 @@ final class DashboardService
                 'valor' => $r->valor->cents,
             ]);
 
-        return $itensDespesa->concat($itensRenda)
+        $itensFatura = $faturas
+            ->filter(fn (Fatura $f) => $this->movimentacaoDaFatura($f) === null)
+            ->map(fn (Fatura $f) => [
+                'id' => $f->id,
+                'tipo' => 'fatura',
+                'descricao' => 'Fatura '.$f->cartaoCredito->formaPagamento->nome,
+                'contexto' => null,
+                'tipoLancamento' => null,
+                'categoriaDespesaId' => null,
+                'data' => Carbon::parse($f->data_vencimento)->toDateString(),
+                'valor' => $f->valor->cents,
+            ]);
+
+        return $itensDespesa->concat($itensRenda)->concat($itensFatura)
             ->map(function (array $item) use ($hoje): array {
                 $dias = (int) $hoje->diffInDays(Carbon::parse($item['data']), false);
 
