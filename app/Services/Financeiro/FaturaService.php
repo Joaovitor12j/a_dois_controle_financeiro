@@ -38,7 +38,11 @@ final class FaturaService
         foreach (Despesa::query()
             ->where('forma_pagamento_id', $cartao->id)
             ->where('tipo_lancamento', TipoLancamentoDespesa::Parcelada->value)
-            ->with(['categoriaDespesa', 'movimentacoes'])
+            ->with([
+                'categoriaDespesa',
+                'movimentacoes',
+                'formaPagamento' => fn ($query) => $query->withTrashed(),
+            ])
             ->get() as $despesa) {
             $numeroParcela = $this->calculadoraDespesa->numeroParcela($despesa, $cicloFechamento);
 
@@ -106,7 +110,7 @@ final class FaturaService
             return $fatura;
         }
 
-        $cartao = FormaPagamento::findOrFail($fatura->cartao_credito_id);
+        $cartao = FormaPagamento::withTrashed()->findOrFail($fatura->cartao_credito_id);
         $valorCentavos = $this->calcularValorCentavos($cartao, $fatura->competencia);
 
         if ($valorCentavos === 0) {
@@ -117,7 +121,7 @@ final class FaturaService
 
         $fatura->update(['valor' => $valorCentavos]);
 
-        return $fatura->refresh();
+        return $fatura;
     }
 
     public function gerar(FormaPagamento $cartao, Competencia $competenciaVencimento): Fatura
@@ -176,7 +180,7 @@ final class FaturaService
             ]);
         }
 
-        $cartao = FormaPagamento::findOrFail($fatura->cartao_credito_id);
+        $cartao = FormaPagamento::withTrashed()->findOrFail($fatura->cartao_credito_id);
 
         return DB::transaction(function () use ($fatura, $cartao, $formaPagamentoReal, $dataPagamento) {
             foreach ($this->itens($cartao, $fatura->competencia) as $item) {

@@ -27,6 +27,7 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0008](0008-feedback-via-flash-nativo-do-inertia-e-log-so-de-excecao.md) | Feedback de ação via flash nativo do Inertia, log só de exceção não tratada | Aceita |
 | [0009](0009-cartao-de-credito-como-extensao-de-forma-de-pagamento.md) | Cartão de crédito como extensão de forma de pagamento | Aceita |
 | [0010](0010-visibilidade-de-despesa-contexto-individual-conjunta.md) | Visibilidade de despesa: contexto individual/conjunta | Aceita |
+| [0011](0011-vale-beneficio-como-extensao-de-forma-de-pagamento.md) | Vale/benefício como extensão de forma de pagamento, com renda mensal gerada na criação | Substituída por 0020 |
 | [0012](0012-pagamento-de-despesa-como-movimentacao.md) | Pagamento de despesa como movimentação, não como atributo | Aceita |
 | [0013](0013-agregacao-casal-no-dashboard-bypass-pontual-donoscope.md) | Agregação casal no dashboard: bypass pontual do DonoScope | Aceita |
 | [0014](0014-renda-usa-forma-de-pagamento-designada-da-conta.md) | Renda usa forma de pagamento designada da conta, não escolha livre no recebimento | Aceita |
@@ -35,3 +36,4 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0017](0017-generalizacao-credito-nunca-desconta-saldo-real.md) | Generalização: crédito nunca desconta saldo real, nem na evolução de saldo do dashboard | Aceita |
 | [0018](0018-fatura-volta-a-ser-entidade-propria.md) | Fatura volta a ser entidade própria | Aceita |
 | [0019](0019-interpretacao-deterministica-da-mensagem-do-assistente.md) | Interpretação determinística da mensagem do assistente | Aceita |
+| [0020](0020-vale-beneficio-sem-extensao-dedicada.md) | Vale e benefício sem extensão dedicada | Aceita |

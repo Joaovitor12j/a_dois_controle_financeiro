@@ -221,10 +221,16 @@ final class DashboardService
         }
 
         return Fatura::query()
-            ->whereHas('cartaoCredito.formaPagamento.conta')
             ->where('competencia', $competencia->paraData())
-            ->with(['cartaoCredito.formaPagamento', 'movimentacoes'])
-            ->get();
+            ->with([
+                'cartaoCredito' => fn ($query) => $query->with([
+                    'formaPagamento' => fn ($query) => $query->withTrashed()->with('conta'),
+                ]),
+                'movimentacoes',
+            ])
+            ->get()
+            ->filter(fn (Fatura $fatura) => $fatura->cartaoCredito?->formaPagamento?->conta !== null)
+            ->values();
     }
 
     private function movimentacaoDaFatura(Fatura $fatura): ?Movimentacao

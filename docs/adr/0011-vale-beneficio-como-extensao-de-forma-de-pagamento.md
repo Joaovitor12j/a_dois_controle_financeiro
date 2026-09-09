@@ -51,4 +51,4 @@ depois de criada não sincroniza a renda já gerada.
 
 ## Status
 
-Aceita
+Substituída por [0020](0020-vale-beneficio-sem-extensao-dedicada.md)

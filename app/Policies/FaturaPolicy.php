@@ -29,6 +29,8 @@ class FaturaPolicy
 
     private function dono(Fatura $fatura): ?string
     {
-        return $fatura->cartaoCredito?->formaPagamento?->conta?->usuario_id;
+        return $fatura->cartaoCredito
+            ?->formaPagamento()->withTrashed()->first()
+            ?->conta?->usuario_id;
     }
 }

@@ -355,3 +355,44 @@ it('não alcança fatura de cartão do parceiro', function () {
         ])
         ->assertForbidden();
 });
+
+it('mantém fatura visível e pagável depois que o cartão que a gerou é excluído', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $cartaoForma = formaPagamentoDespesa($conta, 'credito', 'Cartão');
+    cartaoCreditoDespesa($cartaoForma, diaFechamento: 10);
+
+    criarDespesaParcelada($eu, $categoria, $cartaoForma, [
+        'valor' => 12000,
+        'numero_parcelas' => 2,
+        'data_primeira_parcela' => '2026-09-01',
+    ]);
+
+    Auth::login($eu);
+    $fatura = app(FaturaService::class)->gerar($cartaoForma, Competencia::deAnoMes(2026, 9));
+
+    $this->actingAs($eu)
+        ->delete(route('formas-pagamento.destroy', $cartaoForma))
+        ->assertRedirect(route('contas.index'));
+
+    $this->actingAs($eu)
+        ->get(route('faturas.index'))
+        ->assertInertia(fn ($page) => $page
+            ->component('Faturas/Index')
+            ->has('faturas', 1)
+            ->where('faturas.0.paga', false)
+        );
+
+    $formaReal = formaPagamentoDespesa($conta, 'debito', 'Conta corrente');
+
+    $this->actingAs($eu)
+        ->patch(route('faturas.marcar-como-paga', $fatura), [
+            'forma_pagamento_id' => $formaReal->id,
+            'data_pagamento' => '2026-09-20',
+        ])
+        ->assertRedirect(route('faturas.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Fatura marcada como paga.']);
+
+    expect($fatura->fresh()?->estaPaga())->toBeTrue();
+});

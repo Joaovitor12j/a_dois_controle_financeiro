@@ -26,10 +26,14 @@ class FaturaController extends Controller
         $this->authorize('viewAny', Fatura::class);
 
         $faturas = Fatura::query()
-            ->whereHas('cartaoCredito.formaPagamento.conta')
-            ->with('cartaoCredito.formaPagamento.conta')
+            ->with([
+                'cartaoCredito' => fn ($query) => $query->with([
+                    'formaPagamento' => fn ($query) => $query->withTrashed()->with('conta'),
+                ]),
+            ])
             ->orderByDesc('data_vencimento')
             ->get()
+            ->filter(fn (Fatura $fatura) => $fatura->cartaoCredito?->formaPagamento?->conta !== null)
             ->map(fn (Fatura $fatura) => $this->faturas->recalcular($fatura))
             ->filter()
             ->map(function (Fatura $fatura) {

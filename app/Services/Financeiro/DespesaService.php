@@ -21,15 +21,6 @@ final class DespesaService
         private readonly CalculadoraCompetenciaDespesa $calculadora,
     ) {}
 
-    /** @return Collection<int, Despesa> */
-    public function listar(): Collection
-    {
-        return Despesa::query()
-            ->with(['formaPagamento.conta.usuario', 'categoriaDespesa'])
-            ->orderByDesc('created_at')
-            ->get();
-    }
-
     /**
      * @param  array{categoria_despesa_id?: string, tipo?: string, forma_pagamento_id?: string, status?: string, busca?: string}  $filtros
      * @return Collection<int, Despesa>

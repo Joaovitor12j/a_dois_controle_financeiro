@@ -827,23 +827,6 @@ it('não confunde o contexto da despesa no payload com o contexto de navegação
         ->assertRedirect(route('despesas.index'));
 });
 
-it('DespesaService::listar retorna despesas visíveis ao usuário autenticado (individual própria + conjuntas)', function () {
-    $eu = Usuario::factory()->create();
-    $parceiro = Usuario::factory()->create();
-    $categoria = categoriaDespesaDeTeste();
-
-    criarDespesaUnica($eu, $categoria, ['descricao' => 'Minha']);
-    criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Do parceiro']);
-    criarDespesaUnica($parceiro, $categoria, ['descricao' => 'Conjunta', 'contexto' => 'conjunta']);
-
-    Auth::login($eu);
-
-    $resultado = app(DespesaService::class)->listar();
-
-    expect($resultado)->toHaveCount(2)
-        ->and($resultado->pluck('descricao')->sort()->values()->all())->toBe(['Conjunta', 'Minha']);
-});
-
 it('exige autenticação nas rotas de despesa', function () {
     $this->get(route('despesas.index'))->assertRedirect(route('login'));
 });

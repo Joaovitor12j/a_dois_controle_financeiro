@@ -107,11 +107,17 @@ Para o tipo crédito, a exclusão lógica da forma de pagamento é suficiente:
 os dados de limite e ciclo de fatura não têm exclusão lógica própria — sua
 visibilidade segue inteiramente a da forma de pagamento a que pertencem.
 
+A exclusão não arrasta (cascata) movimentações, despesas parceladas nem
+faturas já existentes associadas à forma de pagamento. Esse histórico
+continua visível e operável (ex.: uma fatura ainda pode ser paga) mesmo
+depois da exclusão, exibindo normalmente a forma de pagamento excluída —
+mesmo princípio já aplicado a despesa e movimentação. O que passa a ser
+bloqueado, a partir da exclusão, é só o uso dela em lançamento novo: gerar
+fatura nova, criar despesa parcelada nova ou selecioná-la como forma de
+pagamento de uma renda.
+
 ## Questões em aberto
 
-- **Cascata para movimentações.** Excluir uma forma de pagamento hoje não
-  arrasta logicamente as movimentações associadas a ela. Falta decidir se
-  deveria haver essa cascata, análoga à de conta → forma de pagamento.
 - **Consistência do dia de vencimento com o de fechamento (crédito).** Hoje
   nada impede que o dia de vencimento seja anterior ao dia de fechamento.
   Falta decidir se essa combinação deve ser validada.
@@ -124,11 +130,15 @@ visibilidade segue inteiramente a da forma de pagamento a que pertencem.
 Implementado em: `app/Models/FormaPagamento.php`, `app/Models/CartaoCredito.php`,
 `app/Services/Financeiro/FormaPagamentoService.php`,
 `app/Services/Financeiro/ContaService.php`,
-`app/Policies/FormaPagamentoPolicy.php`,
+`app/Policies/FormaPagamentoPolicy.php`, `app/Policies/FaturaPolicy.php`,
 `app/Http/Controllers/FormaPagamentoController.php`,
+`app/Services/Financeiro/FaturaService.php`,
+`app/Services/Financeiro/DashboardService.php`,
+`app/Http/Controllers/FaturaController.php`,
 `resources/js/Pages/Contas/Index.tsx`,
 `resources/js/Pages/Contas/Partials/CartaoConta.tsx`,
 `database/migrations/2026_08_29_000002_create_formas_pagamento_table.php`,
 `database/migrations/2026_08_31_000005_recriar_cartoes_credito_como_extensao_forma_pagamento.php`,
 `database/migrations/2026_09_01_000001_add_vale_beneficio_to_tipo_forma_pagamento_enum.php`,
-`database/migrations/2026_09_02_000004_add_recebe_renda_to_formas_pagamento_table.php`.
+`database/migrations/2026_09_02_000004_add_recebe_renda_to_formas_pagamento_table.php`,
+`database/migrations/2026_09_09_000001_drop_vales_beneficio_table.php`.

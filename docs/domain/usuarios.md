@@ -55,3 +55,7 @@ A cor do casal é o ponto médio entre as duas cores individuais — a média de
 cada componente (vermelho, verde, azul) do par vigente. Não é escolhida
 diretamente por nenhum dos usuários, e muda automaticamente se qualquer um
 dos dois trocar sua cor.
+
+## Questões em aberto
+
+Nenhuma no momento.
