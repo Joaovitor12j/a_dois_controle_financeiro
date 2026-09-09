@@ -30,6 +30,8 @@ class FaturaController extends Controller
             ->with('cartaoCredito.formaPagamento.conta')
             ->orderByDesc('data_vencimento')
             ->get()
+            ->map(fn (Fatura $fatura) => $this->faturas->recalcular($fatura))
+            ->filter()
             ->map(function (Fatura $fatura) {
                 $cartao = $fatura->cartaoCredito->formaPagamento;
 

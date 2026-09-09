@@ -8,12 +8,60 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import SelectInput from '@/Components/SelectInput';
 import TextInput from '@/Components/TextInput';
-import type { ContextoDespesa, Despesa, FormaPagamento } from '@/types';
+import { formatarCompetenciaExtenso } from '@/Pages/Dashboard/Partials/SeletorVisualizacao';
+import type { CartaoCredito, ContextoDespesa, Despesa, FormaPagamento } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 function rotuloFormaPagamento(forma: FormaPagamento): string {
     return forma.conta ? `${forma.conta.nome} - ${forma.nome}` : forma.nome;
+}
+
+function formatarDataCurta(data: string): string {
+    const [ano, mes, dia] = data.split('-');
+
+    return `${dia}/${mes}/${ano}`;
+}
+
+/**
+ * Mesma regra de fechamento de app/Domain/Financeiro/CalculadoraFatura.php — mantida em
+ * duplicidade aqui só como prévia informativa: quem calcula o valor real da fatura continua
+ * sendo o backend na geração.
+ */
+function calcularPrevisaoFatura(dataPagamento: string, cartao: CartaoCredito) {
+    const [ano, mes, dia] = dataPagamento.split('-').map(Number);
+
+    let mesFechamento = mes;
+    let anoFechamento = ano;
+
+    if (dia > cartao.dia_fechamento) {
+        mesFechamento += 1;
+
+        if (mesFechamento > 12) {
+            mesFechamento = 1;
+            anoFechamento += 1;
+        }
+    }
+
+    const offsetVencimento = cartao.dia_vencimento <= cartao.dia_fechamento ? 1 : 0;
+
+    let mesVencimento = mesFechamento + offsetVencimento;
+    let anoVencimento = anoFechamento;
+
+    if (mesVencimento > 12) {
+        mesVencimento -= 12;
+        anoVencimento += 1;
+    }
+
+    const diasNoMes = new Date(anoVencimento, mesVencimento, 0).getDate();
+    const diaVencimento = Math.min(cartao.dia_vencimento, diasNoMes);
+
+    return {
+        competencia: `${anoVencimento}-${String(mesVencimento).padStart(2, '0')}`,
+        dataVencimento: formatarDataCurta(
+            `${anoVencimento}-${String(mesVencimento).padStart(2, '0')}-${String(diaVencimento).padStart(2, '0')}`,
+        ),
+    };
 }
 
 function paraCentavos(valorEmReais: string): number | null {
@@ -72,6 +120,15 @@ export default function MarcarComoPagaDespesa({
     }));
 
     const ehParcelada = despesa?.tipo_lancamento === 'parcelada';
+
+    const cartaoSelecionado = formasPagamento.find(
+        (forma) => forma.id === data.forma_pagamento_id,
+    )?.cartao_credito;
+
+    const previsaoFatura =
+        cartaoSelecionado && data.data_pagamento
+            ? calcularPrevisaoFatura(data.data_pagamento, cartaoSelecionado)
+            : null;
 
     const submeter: FormEventHandler = (evento) => {
         evento.preventDefault();
@@ -182,6 +239,17 @@ export default function MarcarComoPagaDespesa({
                             className="mt-2"
                             message={errors.forma_pagamento_id}
                         />
+
+                        {previsaoFatura && (
+                            <p className="mt-2 text-sm text-tinta-claro">
+                                Essa despesa vai ser lançada na fatura de{' '}
+                                {formatarCompetenciaExtenso(
+                                    previsaoFatura.competencia,
+                                ).toLowerCase()}
+                                , que vence em {previsaoFatura.dataVencimento}
+                                .
+                            </p>
+                        )}
                     </div>
                 </BlocoCondicional>
 

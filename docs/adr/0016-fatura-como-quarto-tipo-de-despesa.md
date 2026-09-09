@@ -64,4 +64,4 @@ formulário genérico (`tipo_lancamento` aceito nele continua restrito a
 
 ## Status
 
-Aceita
+Substituída por [0018](0018-fatura-volta-a-ser-entidade-propria.md)

@@ -5,33 +5,27 @@ repetidos aqui.
 
 ## Conceito
 
-Fatura é o quarto tipo de lançamento de despesa, ao lado de única, mensal e
-parcelada — ver [despesas.md](despesas.md#natureza-do-lançamento). Não é uma
-entidade própria: uma fatura é uma despesa como qualquer outra, com
-`tipo_lancamento` igual a `fatura`, sujeita ao mesmo mecanismo de pagamento
-via movimentação (competência, `marcar como paga`, `desfazer pagamento`) —
-ver [ADR 0016](../adr/0016-fatura-como-quarto-tipo-de-despesa.md) e
-[ADR 0012](../adr/0012-pagamento-de-despesa-como-movimentacao.md).
+Fatura é uma entidade própria (não é `Despesa`, não tem `tipo_lancamento`) —
+ver [ADR 0018](../adr/0018-fatura-volta-a-ser-entidade-propria.md). Ela é o
+agregado, por cartão de crédito e competência de vencimento, das despesas
+pagas naquele cartão dentro de uma janela de fechamento.
 
-Diferente dos outros três tipos, fatura não nasce de um formulário livre: ela
-é **gerada**, manualmente, a partir de um cartão de crédito e uma
-competência de vencimento. A tela de Despesas não lista fatura — ela tem
-gerenciamento próprio numa aba dedicada, exatamente por não ser um
-lançamento de mão livre.
+Fatura não nasce de um formulário livre: ela é **gerada**, manualmente, a
+partir de um cartão de crédito e uma competência de vencimento. A tela de
+Despesas não lista fatura — ela tem gerenciamento próprio numa aba dedicada,
+exatamente por não ser um lançamento de mão livre. Fatura não tem
+`categoria_despesa_id`: não é um gasto próprio, é o agregado de outros gastos
+que já têm categoria individualmente.
 
 ## Campos
 
-Fatura tem `forma_pagamento_id` obrigatório — o cartão de crédito ao qual
-pertence — e `data_vencimento` obrigatória, calculada na geração. Não tem
-`categoria_despesa_id`: é o único tipo de despesa isento da obrigatoriedade
-de categoria (regra geral em [despesas.md](despesas.md#categoria)), porque
-não é um gasto próprio, é o agregado de outros gastos que já têm categoria
-individualmente. Não tem `dia_vencimento`, `data_inicio`, `data_fim`,
-`numero_parcelas` nem `data_primeira_parcela` — proibidos, mesma regra de
-despesa única.
+Fatura tem `cartao_credito_id` obrigatório — o cartão de crédito ao qual
+pertence —, `competencia` (mês de vencimento, sempre dia 1) e
+`data_vencimento`, calculada na geração. Existe no máximo uma fatura por par
+cartão + competência.
 
-`valor` não é digitado: é sempre o resultado do cálculo de geração,
-descrito abaixo.
+`valor` não é digitado: é sempre o resultado do cálculo de geração ou do
+recálculo automático, descritos abaixo.
 
 ## Geração
 
@@ -80,17 +74,30 @@ movimentação em crédito é rejeitado — não existe fatura de valor zero.
 ## Regeneração
 
 Enquanto não paga, gerar a fatura de um cartão + competência que já tem
-fatura apenas recalcula o valor sobre a mesma despesa (mesmo id, mesma
+fatura apenas recalcula o valor sobre a mesma fatura (mesmo id, mesma
 `data_vencimento`) — não cria uma segunda. Regenerar uma fatura já paga é
 bloqueado.
 
+### Recálculo automático
+
+Fatura ainda não paga não fica com valor parado esperando uma ação manual:
+toda vez que a tela de Faturas é aberta, cada fatura não paga tem o valor
+recalculado automaticamente contra os itens que ela agrega naquele momento —
+sem precisar clicar em "Gerar fatura" de novo. Se o recálculo automático
+zerar o total (as despesas que compunham a fatura deixaram de existir ou de
+estar na janela), a fatura é **excluída automaticamente** — mesma regra de
+"não existe fatura de valor zero", aplicada também fora da geração explícita.
+Fatura já paga nunca é recalculada, automática ou manualmente.
+
 ## Pagamento
 
-Pagamento de fatura não tem mecanismo próprio: segue exatamente o mesmo
-caminho de pagamento de despesa única — uma movimentação, valor total,
-forma de pagamento real escolhida no momento do pagamento (nunca o próprio
-cartão). Essa movimentação desconta saldo normalmente, porque sua forma de
-pagamento não é crédito — ver [movimentacoes.md](movimentacoes.md).
+Pagamento de fatura tem mecanismo próprio, não reaproveita o pagamento de
+despesa: uma movimentação para cada item da fatura que ainda não tinha
+movimentação própria (marcando parcela/única/mensal como paga), mais uma
+movimentação agregada no valor total da fatura, na forma de pagamento real
+escolhida no momento do pagamento (nunca o próprio cartão). Essa movimentação
+agregada desconta saldo normalmente, porque sua forma de pagamento não é
+crédito — ver [movimentacoes.md](movimentacoes.md).
 
 ## Fatura e os totais do período
 
@@ -108,18 +115,17 @@ ou não. Contar os dois seria duplicar o mesmo gasto.
   como paga depois, com data retroativa à janela). Falta decidir se isso
   deveria gerar algum alerta ou permanecer simplesmente fora do valor já
   fechado.
-- **Exclusão de fatura gerada por engano.** Uma fatura segue as mesmas
-  regras gerais de exclusão de despesa (não há exceção documentada), mas o
-  efeito de excluir uma fatura ainda não paga e depois regenerá-la não foi
-  pensado como fluxo dedicado.
+- **Exclusão de fatura gerada por engano.** O recálculo automático já
+  resolve o caso de a fatura zerar sozinha (ela é excluída automaticamente),
+  mas cancelar manualmente uma fatura ainda não paga, gerada por engano
+  enquanto ainda tem itens, não foi pensado como fluxo dedicado.
 
 ---
 
 Implementado em:
-`database/migrations/2026_09_08_000002_add_fatura_to_tipo_lancamento_despesa_enum.php`,
-`database/migrations/2026_09_08_000003_add_fatura_ao_despesas_campos_por_tipo_check.php`,
-`database/migrations/2026_09_08_000004_drop_faturas_e_fatura_id_de_movimentacoes.php`,
-`app/Enums/TipoLancamentoDespesa.php`, `app/Domain/Financeiro/CalculadoraFatura.php`,
+`database/migrations/2026_09_08_000005_remover_fatura_de_despesas.php`,
+`database/migrations/2026_09_08_000006_recriar_faturas_e_fatura_id_em_movimentacoes.php`,
+`app/Models/Fatura.php`, `app/Domain/Financeiro/CalculadoraFatura.php`,
 `app/Domain/Financeiro/CalculadoraCompetenciaDespesa.php`,
-`app/Services/Financeiro/DespesaService.php`, `app/Http/Controllers/FaturaController.php`,
+`app/Services/Financeiro/FaturaService.php`, `app/Http/Controllers/FaturaController.php`,
 `app/Http/Requests/GerarFaturaRequest.php`, `resources/js/Pages/Faturas/Index.tsx`.

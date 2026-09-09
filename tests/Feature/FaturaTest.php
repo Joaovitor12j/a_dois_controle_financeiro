@@ -9,6 +9,7 @@ use App\Models\Movimentacao;
 use App\Models\Scopes\DespesaScope;
 use App\Models\Usuario;
 use App\Services\Financeiro\FaturaService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 it('gera fatura agregando parcela do ciclo mesmo sem ela ter sido marcada como paga antes', function () {
@@ -85,6 +86,71 @@ it('regenera fatura ainda não paga recalculando o valor sobre a mesma fatura', 
     expect($regenerada->id)->toBe($fatura->id)
         ->and($regenerada->valor)->toEqual(Money::fromCents(15000))
         ->and(Fatura::count())->toBe(1);
+});
+
+it('recalcula fatura automaticamente ao carregar a tela de faturas, sem precisar gerar de novo', function () {
+    $eu = Usuario::factory()->create();
+    $conta = contaDoUsuarioDespesa($eu);
+    $categoria = categoriaDespesaDeTeste();
+    $cartaoForma = formaPagamentoDespesa($conta, 'credito', 'Cartão');
+    cartaoCreditoDespesa($cartaoForma, diaFechamento: 10);
+
+    criarDespesaParcelada($eu, $categoria, $cartaoForma, [
+        'valor' => 10000,
+        'numero_parcelas' => 3,
+        'data_primeira_parcela' => '2026-09-01',
+    ]);
+
+    Auth::login($eu);
+    $fatura = app(FaturaService::class)->gerar($cartaoForma, Competencia::deAnoMes(2026, 9));
+
+    $unica = criarDespesaUnica($eu, $categoria, ['valor' => 5000, 'data_vencimento' => '2026-09-02']);
+    criarMovimentacaoDespesa($unica, $cartaoForma, '2026-09-01', data: '2026-09-06');
+
+    $this->actingAs($eu)->get(route('faturas.index'));
+
+    expect($fatura->fresh()->valor)->toEqual(Money::fromCents(15000))
+        ->and(Fatura::count())->toBe(1);
+});
+
+it('não recalcula fatura já paga', function () {
+    $c = novoContextoDespesa();
+    cartaoCreditoDespesa($c->cartaoCredito, diaFechamento: 10);
+
+    criarDespesaParcelada($c->usuario, $c->categoria, $c->cartaoCredito, [
+        'valor' => 10000,
+        'numero_parcelas' => 3,
+        'data_primeira_parcela' => '2026-09-01',
+    ]);
+
+    $fatura = app(FaturaService::class)->gerar($c->cartaoCredito, Competencia::deAnoMes(2026, 9));
+    $formaReal = formaPagamentoDespesa($c->conta, 'debito', 'Conta corrente');
+    app(FaturaService::class)->marcarComoPaga($fatura, $formaReal->id, '2026-09-20');
+
+    $unica = criarDespesaUnica($c->usuario, $c->categoria, ['valor' => 5000, 'data_vencimento' => '2026-09-02']);
+    criarMovimentacaoDespesa($unica, $c->cartaoCredito, '2026-09-01', data: '2026-09-06');
+
+    $recalculada = app(FaturaService::class)->recalcular($fatura->fresh());
+
+    expect($recalculada->valor)->toEqual(Money::fromCents(10000));
+});
+
+it('exclui a fatura automaticamente quando o recálculo zera o valor', function () {
+    $c = novoContextoDespesa();
+    cartaoCreditoDespesa($c->cartaoCredito, diaFechamento: 10);
+
+    $unica = criarDespesaUnica($c->usuario, $c->categoria, ['valor' => 5000, 'data_vencimento' => '2026-09-02']);
+    $movimentacao = criarMovimentacaoDespesa($unica, $c->cartaoCredito, '2026-09-01', data: '2026-09-06');
+
+    $fatura = app(FaturaService::class)->gerar($c->cartaoCredito, Competencia::deAnoMes(2026, 9));
+    $faturaId = $fatura->id;
+
+    $movimentacao->delete();
+
+    $recalculada = app(FaturaService::class)->recalcular($fatura);
+
+    expect($recalculada)->toBeNull()
+        ->and(Fatura::query()->find($faturaId))->toBeNull();
 });
 
 it('bloqueia regenerar fatura já paga', function () {
@@ -279,6 +345,7 @@ it('não alcança fatura de cartão do parceiro', function () {
         'data_primeira_parcela' => '2026-09-01',
     ]);
 
+    Auth::login($parceiro);
     $fatura = app(FaturaService::class)->gerar($cartaoParceiro, Competencia::deAnoMes(2026, 9));
 
     $this->actingAs($eu)

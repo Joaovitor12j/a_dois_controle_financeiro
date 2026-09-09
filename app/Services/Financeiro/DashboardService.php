@@ -217,7 +217,7 @@ final class DashboardService
     private function faturasNoPeriodo(string $modo, Competencia $competencia): Collection
     {
         if ($modo === 'casal') {
-            return collect();
+            return new Collection;
         }
 
         return Fatura::query()

@@ -31,5 +31,6 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0013](0013-agregacao-casal-no-dashboard-bypass-pontual-donoscope.md) | Agregação casal no dashboard: bypass pontual do DonoScope | Aceita |
 | [0014](0014-renda-usa-forma-de-pagamento-designada-da-conta.md) | Renda usa forma de pagamento designada da conta, não escolha livre no recebimento | Aceita |
 | [0015](0015-cor-de-usuario-em-tabela-propria.md) | Cor de usuário e cor do casal em tabela própria | Aceita |
-| [0016](0016-fatura-como-quarto-tipo-de-despesa.md) | Fatura como quarto tipo de despesa | Aceita |
+| [0016](0016-fatura-como-quarto-tipo-de-despesa.md) | Fatura como quarto tipo de despesa | Substituída por 0018 |
 | [0017](0017-generalizacao-credito-nunca-desconta-saldo-real.md) | Generalização: crédito nunca desconta saldo real, nem na evolução de saldo do dashboard | Aceita |
+| [0018](0018-fatura-volta-a-ser-entidade-propria.md) | Fatura volta a ser entidade própria | Aceita |

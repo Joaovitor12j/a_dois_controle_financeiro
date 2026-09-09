@@ -93,6 +93,33 @@ final class FaturaService
             ->first();
     }
 
+    private function calcularValorCentavos(FormaPagamento $cartao, Competencia $competenciaVencimento): int
+    {
+        $itens = $this->itens($cartao, $competenciaVencimento);
+
+        return array_sum(array_map(fn (array $item) => $item['valor']->cents, $itens));
+    }
+
+    public function recalcular(Fatura $fatura): ?Fatura
+    {
+        if ($fatura->estaPaga()) {
+            return $fatura;
+        }
+
+        $cartao = FormaPagamento::findOrFail($fatura->cartao_credito_id);
+        $valorCentavos = $this->calcularValorCentavos($cartao, $fatura->competencia);
+
+        if ($valorCentavos === 0) {
+            $fatura->delete();
+
+            return null;
+        }
+
+        $fatura->update(['valor' => $valorCentavos]);
+
+        return $fatura->refresh();
+    }
+
     public function gerar(FormaPagamento $cartao, Competencia $competenciaVencimento): Fatura
     {
         $existente = $this->buscar($cartao, $competenciaVencimento);
@@ -103,8 +130,7 @@ final class FaturaService
             ]);
         }
 
-        $itens = $this->itens($cartao, $competenciaVencimento);
-        $valorCentavos = array_sum(array_map(fn (array $item) => $item['valor']->cents, $itens));
+        $valorCentavos = $this->calcularValorCentavos($cartao, $competenciaVencimento);
 
         if ($valorCentavos === 0) {
             throw ValidationException::withMessages([
@@ -114,7 +140,7 @@ final class FaturaService
 
         $atributos = [
             'cartao_credito_id' => $cartao->id,
-            'competencia' => $competenciaVencimento->paraData(),
+            'competencia' => $competenciaVencimento,
             'data_vencimento' => $this->calculadoraFatura->dataVencimento($competenciaVencimento, $cartao->cartaoCredito),
             'valor' => $valorCentavos,
         ];
