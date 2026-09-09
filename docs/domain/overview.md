@@ -54,6 +54,7 @@ conjunta não deve ser tratada como individual.
 | Fatura | [fatura.md](fatura.md) |
 | Movimentações | [movimentacoes.md](movimentacoes.md) |
 | Dashboard | [dashboard.md](dashboard.md) |
+| Assistente | [assistente.md](assistente.md) |
 
 ## Estado do redesenho
 

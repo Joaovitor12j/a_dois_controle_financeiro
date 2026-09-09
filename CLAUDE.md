@@ -18,6 +18,7 @@ Domínios com regra definida hoje:
 | Fatura | [fatura.md](docs/domain/fatura.md) |
 | Movimentações | [movimentacoes.md](docs/domain/movimentacoes.md) |
 | Dashboard | [dashboard.md](docs/domain/dashboard.md) |
+| Assistente | [assistente.md](docs/domain/assistente.md) |
 
 O domínio segue sendo desenhado incrementalmente, um recorte por vez (ex.: movimentações hoje cobre só pagamento de despesa — renda, fatura e saldo inicial ainda não têm regra). Um domínio sem documento em `docs/domain/` não tem regra definida; não inferir do código.
 
@@ -124,6 +125,7 @@ Referência rápida. Cada item tem sua ADR em [`docs/adr/`](docs/adr/README.md);
 * **Exclusão lógica com cascata na aplicação**. — [ADR 0006](docs/adr/0006-soft-delete-com-cascata-na-aplicacao.md)
 * **Fechamento mensal / acerto / sobra**: removidos do domínio. — [ADR 0007](docs/adr/0007-fechamento-mensal-removido-do-dominio.md)
 * **Feedback ao usuário via flash nativo do Inertia, log só de exceção não tratada**. — [ADR 0008](docs/adr/0008-feedback-via-flash-nativo-do-inertia-e-log-so-de-excecao.md)
+* **Assistente interpreta mensagem por regra determinística, sem modelo de linguagem no caminho no MVP**. — [ADR 0019](docs/adr/0019-interpretacao-deterministica-da-mensagem-do-assistente.md)
 
 ## Padrões de código
 

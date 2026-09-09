@@ -34,3 +34,4 @@ não é editada para mudar de rumo — cria-se uma nova que a substitui.
 | [0016](0016-fatura-como-quarto-tipo-de-despesa.md) | Fatura como quarto tipo de despesa | Substituída por 0018 |
 | [0017](0017-generalizacao-credito-nunca-desconta-saldo-real.md) | Generalização: crédito nunca desconta saldo real, nem na evolução de saldo do dashboard | Aceita |
 | [0018](0018-fatura-volta-a-ser-entidade-propria.md) | Fatura volta a ser entidade própria | Aceita |
+| [0019](0019-interpretacao-deterministica-da-mensagem-do-assistente.md) | Interpretação determinística da mensagem do assistente | Aceita |
