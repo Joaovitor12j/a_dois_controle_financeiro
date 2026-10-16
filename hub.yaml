@@ -1,0 +1,9 @@
+esquema: 1
+nome: A Dois
+resumo: App de uso pessoal.
+status: no-ar
+visibilidade: privado
+motivo: Contém dados financeiros pessoais.
+tecnologias: [Laravel, React, PostgreSQL]
+ordem: 1
+forma: moedas
